@@ -66,10 +66,11 @@ TIME MANAGEMENT:
 
 ENDING THE CONVERSATION:
 - When you've covered most topics OR after 10-12 exchanges, prepare to wrap up
-- Say something like: "I think I have a good sense of your perspective. Let me summarize what I heard..."
-- Generate the summary
-- Ask: "Does this accurately capture your thoughts? Anything to add or clarify?"
-- Once confirmed, thank them and end the session`;
+- Say: "I think I have a good sense of your perspective. Let me summarize what I heard..."
+- Then immediately generate the summary using the structured format
+- CRITICAL: End the summary with "Does this accurately capture your thoughts? Anything to add or clarify?"
+- This question is required to trigger the review interface
+- Do NOT thank them or end the session - wait for their confirmation of the summary`;
 }
 
 // Send message to Claude
@@ -115,7 +116,11 @@ Technical Comfort Level:
 Recommended Follow-up:
 [1-2 specific next steps based on their interests and needs, or "General NextEd outreach" if unclear]
 
-Keep it concise but capture important details. Use "Not discussed" for topics they didn't address. Be honest if the conversation was brief or surface-level. Present this summary to the participant for their review.`;
+Keep it concise but capture important details. Use "Not discussed" for topics they didn't address. Be honest if the conversation was brief or surface-level.
+
+CRITICAL: After presenting the summary, you MUST end with: "Does this accurately capture your thoughts? Anything to add or clarify?"
+
+This is required to trigger the review interface. Do not thank them or end the session yet.`;
 
   const messages = [
     ...conversationHistory,

@@ -6,19 +6,60 @@ let conversationEnded = false;
 let timerInterval = null;
 let startTime = null;
 let tenMinuteWarningShown = false;
+let currentTopicIndex = null; // Track which topic bot is currently asking about
 
-// Topic tracking - based on USER engagement, not bot mentions
+// Topic tracking - detect based on bot's question context
 const topics = [
-    { label: "Workshop Experience", covered: false, keywords: ["workshop", "experience", "impressed", "liked", "enjoyed", "stood out", "thought", "felt"] },
-    { label: "Specific Content", covered: false, keywords: ["session", "presentation", "content", "demonstration", "part", "section"] },
-    { label: "Newton Song Demo", covered: false, keywords: ["song", "music", "newton", "creative", "suno"] },
-    { label: "NextEd Interest", covered: false, keywords: ["interested", "dgx", "workstation", "policy board", "adoption clinic", "participate", "join"] },
-    { label: "AI Concerns", covered: false, keywords: ["concerned", "worried", "hesitant", "scared", "nervous", "uncomfortable", "skeptical"] },
-    { label: "Adoption Barriers", covered: false, keywords: ["difficult", "hard", "challenge", "barrier", "obstacle", "prevent", "problem", "issue"] },
-    { label: "Technical Comfort", covered: false, keywords: ["use", "tried", "familiar", "comfortable", "know how", "experience with", "worked with"] },
-    { label: "Course Ideas", covered: false, keywords: ["course", "class", "teach", "students", "assignment", "curriculum", "lesson"] },
-    { label: "Support Needs", covered: false, keywords: ["need", "want", "help", "support", "would like", "looking for", "hoping"] },
-    { label: "Data Privacy", covered: false, keywords: ["privacy", "security", "confidential", "sensitive", "data", "protect", "safe"] }
+    { 
+        label: "Workshop Experience", 
+        covered: false, 
+        botKeywords: ["workshop", "experience", "impressions", "overall", "stood out", "land for you"]
+    },
+    { 
+        label: "Specific Content", 
+        covered: false, 
+        botKeywords: ["content", "sessions", "resonated", "specific", "part of", "demonstrations"]
+    },
+    { 
+        label: "Newton Song Demo", 
+        covered: false, 
+        botKeywords: ["song", "newton", "music", "demonstration", "suno", "creative"]
+    },
+    { 
+        label: "NextEd Interest", 
+        covered: false, 
+        botKeywords: ["nexted", "interested", "dgx", "workstation", "policy board", "adoption clinic", "spark"]
+    },
+    { 
+        label: "AI Concerns", 
+        covered: false, 
+        botKeywords: ["concerns", "reservations", "worried", "hesitant", "concerns about ai"]
+    },
+    { 
+        label: "Adoption Barriers", 
+        covered: false, 
+        botKeywords: ["barriers", "obstacles", "challenges", "difficulty", "prevent", "adoption"]
+    },
+    { 
+        label: "Technical Comfort", 
+        covered: false, 
+        botKeywords: ["comfort", "familiar", "technical", "ai tools", "experience with", "used"]
+    },
+    { 
+        label: "Course Ideas", 
+        covered: false, 
+        botKeywords: ["course", "redesign", "teaching", "class", "curriculum", "students"]
+    },
+    { 
+        label: "Support Needs", 
+        covered: false, 
+        botKeywords: ["support", "help", "helpful", "need", "nexted could", "assistance"]
+    },
+    { 
+        label: "Data Privacy", 
+        covered: false, 
+        botKeywords: ["privacy", "security", "data", "confidential", "sensitive", "safe"]
+    }
 ];
 
 // DOM Elements
@@ -85,31 +126,45 @@ function updateTopicProgress() {
     renderTopics();
 }
 
-function checkTopicCoverage(message, isUser) {
-    // ONLY check user messages, not bot messages
-    if (!isUser) return;
+// Detect which topic the bot is asking about
+function detectBotTopic(botMessage) {
+    const lowerMessage = botMessage.toLowerCase();
     
-    // Require substantive response (>20 characters, not just "yes" or "ok")
-    if (message.length < 20) return;
-    
-    const lowerMessage = message.toLowerCase();
-    let updated = false;
-    
-    topics.forEach(topic => {
-        if (!topic.covered) {
-            // Check if any keywords match
-            const hasKeyword = topic.keywords.some(keyword => 
-                lowerMessage.includes(keyword.toLowerCase())
-            );
-            
-            if (hasKeyword) {
-                topic.covered = true;
-                updated = true;
-            }
+    for (let i = 0; i < topics.length; i++) {
+        if (topics[i].covered) continue; // Skip already covered topics
+        
+        const hasKeyword = topics[i].botKeywords.some(keyword => 
+            lowerMessage.includes(keyword.toLowerCase())
+        );
+        
+        if (hasKeyword) {
+            currentTopicIndex = i;
+            return;
         }
-    });
+    }
     
-    if (updated) {
+    // No specific topic detected
+    currentTopicIndex = null;
+}
+
+// Mark current topic as covered when user responds substantively
+function markCurrentTopicCovered(userMessage) {
+    // Must be substantive (>15 chars) and not a dismissive response
+    if (userMessage.length < 15) return;
+    
+    const lower = userMessage.toLowerCase();
+    const dismissive = ['i don\'t know', 'not sure', 'maybe', 'next question', 'move on', 'pass'];
+    const isDismissive = dismissive.some(phrase => lower.includes(phrase));
+    
+    if (isDismissive) {
+        // User declined to engage with this topic
+        currentTopicIndex = null;
+        return;
+    }
+    
+    // Mark the current topic as covered
+    if (currentTopicIndex !== null && !topics[currentTopicIndex].covered) {
+        topics[currentTopicIndex].covered = true;
         updateTopicProgress();
     }
 }
@@ -195,8 +250,11 @@ async function handleInitialSubmit(e) {
             initialForm.classList.add('hidden');
             chatInterface.classList.remove('hidden');
             
-            // Display bot's greeting (don't track topics from greeting)
+            // Display bot's greeting
             addMessage('bot', data.message);
+            
+            // Detect initial topic from greeting
+            detectBotTopic(data.message);
             
             // Start timer
             startTimer();
@@ -262,8 +320,8 @@ async function handleSendMessage() {
     const message = userInput.value.trim();
     if (!message) return;
     
-    // Check topic coverage for USER message
-    checkTopicCoverage(message, true);
+    // Mark current topic as covered if user gave substantive response
+    markCurrentTopicCovered(message);
     
     // Display user message
     addMessage('user', message);
@@ -287,16 +345,18 @@ async function handleSendMessage() {
         hideTypingIndicator();
         
         if (response.ok) {
-            // Display bot response (don't track topics from bot messages)
+            // Display bot response
             addMessage('bot', data.message);
             
-            // Check if this is a summary presentation
+            // Check if this is a summary
             if (isSummaryMessage(data.message)) {
                 // Bot initiated summary - stop timer and show modal
                 stopTimer();
                 closeTopicDropdown();
                 setTimeout(() => showSummaryModal(data.message), 1000);
             } else {
+                // Detect which topic bot is asking about now
+                detectBotTopic(data.message);
                 setInputEnabled(true);
             }
         } else {
@@ -333,10 +393,26 @@ function addMessage(role, content) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// Check if message is a summary
+// Check if message is a summary - more robust detection
 function isSummaryMessage(message) {
-    return message.includes('PARTICIPANT SUMMARY') || 
-           message.includes('Does this accurately capture your thoughts?');
+    const summaryIndicators = [
+        'PARTICIPANT SUMMARY',
+        'participant summary',
+        'Workshop Feedback:',
+        'NextEd Interest:',
+        'Key Concerns',
+        'Does this accurately capture your thoughts',
+        'Does this capture your thoughts',
+        'Review this summary',
+        'here\'s a summary',
+        'let me summarize',
+        'Summary of',
+        'Recommended Follow-up:'
+    ];
+    
+    return summaryIndicators.some(indicator => 
+        message.includes(indicator)
+    );
 }
 
 // Show/hide typing indicator
