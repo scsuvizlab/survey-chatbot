@@ -51,6 +51,8 @@ Only ask follow-ups (max 1-2) when:
 CORE TOPICS TO COVER:
 ${config.coreTopics.map((topic, i) => `${i + 1}. ${topic}`).join('\n')}
 
+IMPORTANT: Topic #8 asks about their experience with THIS CONVERSATIONAL SURVEY compared to traditional multiple-choice questionnaires. Make sure to ask this before wrapping up!
+
 IMPORTANT BOUNDARIES:
 - If asked for advice or solutions, redirect: "I'm here to understand your perspective rather than offer solutions right now - the NextEd team will use these conversations to shape how they can best support faculty."
 - If participants ask how you work, be transparent about being an AI prototype using Claude
@@ -104,14 +106,17 @@ NextEd Interest:
 • Policy Board: [Yes/No/Maybe - include any specific interests, or "Not discussed"]
 • Adoption Clinic: [Yes/No/Maybe - include course ideas if mentioned, or "Not discussed"]
 
-Key Concerns About AI Adoption:
-[Bulleted list of their main concerns, barriers, or reservations. If none expressed, write "None expressed"]
-
-Notable Insights:
-[Bulleted list of particularly interesting or unique perspectives they shared. If limited, write "Limited insights shared"]
+AI Concerns & Support Needs:
+[Comprehensive section covering: concerns/reservations about AI in teaching, barriers to adoption, data privacy/security concerns, environmental considerations, and what support would be helpful. Use bullet points. If none expressed, write "None expressed"]
 
 Technical Comfort Level:
 [Brief assessment of their experience with AI tools, or "Not discussed" if not addressed]
+
+Course Ideas:
+[Specific course redesign concepts or ideas they mentioned, or "Not discussed" if not addressed]
+
+Survey Experience:
+[Their thoughts on this conversational approach vs. traditional multiple-choice surveys, or "Not discussed" if not addressed]
 
 Recommended Follow-up:
 [1-2 specific next steps based on their interests and needs, or "General NextEd outreach" if unclear]

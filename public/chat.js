@@ -8,7 +8,7 @@ let startTime = null;
 let tenMinuteWarningShown = false;
 let currentTopicIndex = null; // Track which topic bot is currently asking about
 
-// Topic tracking - detect based on bot's question context
+// Topic tracking - detect based on bot's question context (8 topics)
 const topics = [
     { 
         label: "Workshop Experience", 
@@ -33,32 +33,22 @@ const topics = [
     { 
         label: "AI Concerns", 
         covered: false, 
-        botKeywords: ["concerns", "reservations", "worried", "hesitant", "concerns about ai"]
-    },
-    { 
-        label: "Adoption Barriers", 
-        covered: false, 
-        botKeywords: ["barriers", "obstacles", "challenges", "difficulty", "prevent", "adoption"]
+        botKeywords: ["concerns", "reservations", "worried", "barriers", "obstacles", "challenges", "privacy", "security", "data", "support", "help", "environmental", "energy", "carbon"]
     },
     { 
         label: "Technical Comfort", 
         covered: false, 
-        botKeywords: ["comfort", "familiar", "technical", "ai tools", "experience with", "used"]
+        botKeywords: ["comfort", "familiar", "technical", "ai tools", "experience with", "used", "tried"]
     },
     { 
         label: "Course Ideas", 
         covered: false, 
-        botKeywords: ["course", "redesign", "teaching", "class", "curriculum", "students"]
+        botKeywords: ["course", "redesign", "teaching", "class", "curriculum", "students", "assignment"]
     },
     { 
-        label: "Support Needs", 
+        label: "Survey Experience", 
         covered: false, 
-        botKeywords: ["support", "help", "helpful", "need", "nexted could", "assistance"]
-    },
-    { 
-        label: "Data Privacy", 
-        covered: false, 
-        botKeywords: ["privacy", "security", "data", "confidential", "sensitive", "safe"]
+        botKeywords: ["survey", "conversational", "experience", "compared to", "multiple choice", "questionnaire", "this tool", "feedback"]
     }
 ];
 
@@ -122,7 +112,7 @@ function renderTopics() {
 
 function updateTopicProgress() {
     const coveredCount = topics.filter(t => t.covered).length;
-    progressText.textContent = `${coveredCount}/10 topics`;
+    progressText.textContent = `${coveredCount}/8 topics`;
     renderTopics();
 }
 

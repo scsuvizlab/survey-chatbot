@@ -22,12 +22,10 @@ const coreTopics = [
   "Specific content or sessions that resonated (or didn't)",
   "Thoughts on the Newton's Law song demonstration",
   "Interest in NextEd offerings (DGX workstations, Policy Board, Adoption Clinic)",
-  "Concerns or reservations about AI in teaching",
-  "Barriers to AI adoption in their courses or department",
+  "AI concerns broadly, including: reservations about AI in teaching, barriers to adoption in their courses or department, data privacy and security concerns, environmental considerations, and what kind of support would be most helpful from NextEd",
   "Technical comfort level with AI tools",
   "Specific course ideas or redesign concepts",
-  "What kind of support would be most helpful from NextEd",
-  "Data privacy or security concerns"
+  "Their experience with this conversational survey compared to traditional multiple-choice questionnaires"
 ];
 
 // Shorter labels for UI display
@@ -37,11 +35,9 @@ const topicLabels = [
   "Newton Song Demo",
   "NextEd Interest",
   "AI Concerns",
-  "Adoption Barriers",
   "Technical Comfort",
   "Course Ideas",
-  "Support Needs",
-  "Data Privacy"
+  "Survey Experience"
 ];
 
 // This greeting is sent after user submits name/email form
