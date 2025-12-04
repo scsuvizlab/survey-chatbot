@@ -218,6 +218,36 @@ app.get('/api/admin/sessions/:filename', async (req, res) => {
   }
 });
 
+// DELETE /api/admin/sessions/:filename - Delete specific session
+app.delete('/api/admin/sessions/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    
+    // Security: prevent path traversal
+    if (filename.includes('..') || filename.includes('/')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
+    const filepath = path.join(SESSIONS_DIR, filename);
+    
+    // Check if file exists
+    try {
+      await fs.access(filepath);
+    } catch {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    // Delete the file
+    await fs.unlink(filepath);
+    
+    console.log(`Deleted session: ${filename}`);
+    res.json({ success: true, message: 'Session deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting session:', error);
+    res.status(500).json({ error: 'Failed to delete session' });
+  }
+});
+
 // GET /api/admin/sessions-all - Download all sessions as single JSON array
 app.get('/api/admin/sessions-all', async (req, res) => {
   try {
@@ -237,6 +267,39 @@ app.get('/api/admin/sessions-all', async (req, res) => {
   } catch (error) {
     console.error('Error downloading all sessions:', error);
     res.status(500).json({ error: 'Failed to download sessions' });
+  }
+});
+
+// DELETE /api/admin/sessions-all - Delete all sessions
+app.delete('/api/admin/sessions-all', async (req, res) => {
+  try {
+    const files = await fs.readdir(SESSIONS_DIR);
+    const jsonFiles = files.filter(f => f.endsWith('.json'));
+    
+    if (jsonFiles.length === 0) {
+      return res.json({ success: true, deleted_count: 0, message: 'No sessions to delete' });
+    }
+    
+    // Delete all JSON files
+    let deletedCount = 0;
+    for (const file of jsonFiles) {
+      try {
+        await fs.unlink(path.join(SESSIONS_DIR, file));
+        deletedCount++;
+      } catch (error) {
+        console.error(`Failed to delete ${file}:`, error);
+      }
+    }
+    
+    console.log(`Deleted ${deletedCount} sessions`);
+    res.json({ 
+      success: true, 
+      deleted_count: deletedCount,
+      message: `Successfully deleted ${deletedCount} session(s)` 
+    });
+  } catch (error) {
+    console.error('Error deleting all sessions:', error);
+    res.status(500).json({ error: 'Failed to delete sessions' });
   }
 });
 
@@ -353,6 +416,8 @@ app.listen(PORT, () => {
   console.log('\nAdmin endpoints:');
   console.log('  GET /api/admin/sessions - List all sessions');
   console.log('  GET /api/admin/sessions/:filename - Download specific session');
+  console.log('  DELETE /api/admin/sessions/:filename - Delete specific session');
   console.log('  GET /api/admin/sessions-all - Download all sessions');
+  console.log('  DELETE /api/admin/sessions-all - Delete all sessions');
   console.log('  POST /api/admin/analyze - Run LLM analysis');
 });

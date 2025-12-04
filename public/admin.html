@@ -62,6 +62,35 @@
         .btn-secondary:hover {
             background-color: #7f8c8d;
         }
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        /* Stats Display */
+        .stats-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #27ae60;
+        }
+        .stats-section h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        .stat-item {
+            font-size: 16px;
+            color: #555;
+            margin: 5px 0;
+        }
+        .stat-number {
+            font-weight: 600;
+            color: #27ae60;
+        }
         
         /* Analysis Results */
         .analysis-section {
@@ -108,7 +137,7 @@
             background-color: white;
             padding: 30px;
             border-radius: 8px;
-            max-width: 800px;
+            max-width: 900px;
             max-height: 80vh;
             overflow-y: auto;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
@@ -135,6 +164,11 @@
         }
         .close-modal:hover {
             color: #333;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
         }
         
         table {
@@ -170,10 +204,22 @@
             background-color: #fff3cd;
             color: #856404;
         }
+        .action-btns {
+            display: flex;
+            gap: 5px;
+        }
         .download-btn {
             padding: 6px 12px;
             font-size: 12px;
             background-color: #3498db;
+        }
+        .delete-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            background-color: #e74c3c;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
         }
         .loading {
             text-align: center;
@@ -200,10 +246,12 @@
             border-radius: 4px;
             margin-bottom: 20px;
         }
-        .count {
-            color: #666;
-            font-size: 14px;
-            margin-top: 10px;
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -214,10 +262,18 @@
         <div class="main-actions">
             <button class="btn-success" onclick="runAnalysis()">🔍 Run Analysis</button>
             <button class="btn-secondary" onclick="openJsonModal()">📁 Manage JSON Files</button>
-            <button onclick="loadSessions()">🔄 Refresh Sessions</button>
         </div>
 
         <div id="error" class="error" style="display: none;"></div>
+        <div id="success" class="success" style="display: none;"></div>
+        
+        <!-- Stats Section -->
+        <div id="stats-section" class="stats-section">
+            <h2>Session Statistics</h2>
+            <div class="stat-item">Total Sessions: <span id="total-count" class="stat-number">0</span></div>
+            <div class="stat-item">Completed: <span id="completed-count" class="stat-number">0</span></div>
+            <div class="stat-item">In Progress: <span id="in-progress-count" class="stat-number">0</span></div>
+        </div>
         
         <!-- Analysis Results Section (hidden by default) -->
         <div id="analysis-section" class="analysis-section" style="display: none;">
@@ -229,23 +285,6 @@
             </div>
         </div>
 
-        <!-- Sessions Overview -->
-        <div id="count" class="count"></div>
-        <div id="loading" class="loading">Loading sessions...</div>
-        
-        <table id="sessions-table" style="display: none;">
-            <thead>
-                <tr>
-                    <th>Participant</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                    <th>Started</th>
-                    <th>Completed</th>
-                </tr>
-            </thead>
-            <tbody id="sessions-body"></tbody>
-        </table>
-
         <!-- JSON Management Modal -->
         <div id="json-modal" class="modal">
             <div class="modal-content">
@@ -254,9 +293,12 @@
                     <button class="close-modal" onclick="closeJsonModal()">×</button>
                 </div>
                 
-                <div style="margin-bottom: 20px;">
-                    <button class="btn-success" onclick="downloadAll()">⬇️ Download All Sessions (Combined)</button>
+                <div class="modal-actions">
+                    <button class="btn-success" onclick="downloadAll()">⬇️ Download All</button>
+                    <button class="btn-danger" onclick="deleteAll()">🗑️ Delete All Sessions</button>
                 </div>
+                
+                <div id="modal-message" style="margin-bottom: 15px;"></div>
                 
                 <table>
                     <thead>
@@ -264,7 +306,7 @@
                             <th>Participant</th>
                             <th>Status</th>
                             <th>Date</th>
-                            <th>Action</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="json-sessions-body"></tbody>
@@ -282,13 +324,7 @@
         document.addEventListener('DOMContentLoaded', loadSessions);
 
         async function loadSessions() {
-            const loading = document.getElementById('loading');
-            const table = document.getElementById('sessions-table');
             const errorDiv = document.getElementById('error');
-            const countDiv = document.getElementById('count');
-            
-            loading.style.display = 'block';
-            table.style.display = 'none';
             errorDiv.style.display = 'none';
             
             try {
@@ -300,71 +336,59 @@
                 }
                 
                 sessionsData = data.sessions;
-                const tbody = document.getElementById('sessions-body');
-                tbody.innerHTML = '';
-                
-                if (data.sessions.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #666;">No sessions yet</td></tr>';
-                } else {
-                    data.sessions.forEach(session => {
-                        const row = createSessionRow(session);
-                        tbody.appendChild(row);
-                    });
-                }
-                
-                countDiv.textContent = `Total sessions: ${data.sessions.length}`;
-                loading.style.display = 'none';
-                table.style.display = 'table';
+                updateStats();
                 
             } catch (error) {
                 console.error('Error loading sessions:', error);
                 errorDiv.textContent = `Error: ${error.message}`;
                 errorDiv.style.display = 'block';
-                loading.style.display = 'none';
             }
         }
 
-        function createSessionRow(session) {
-            const tr = document.createElement('tr');
+        function updateStats() {
+            const total = sessionsData.length;
+            const completed = sessionsData.filter(s => s.status === 'completed').length;
+            const inProgress = sessionsData.filter(s => s.status === 'in-progress').length;
             
-            const startDate = new Date(session.start_time).toLocaleString();
-            const completedDate = session.completed_time 
-                ? new Date(session.completed_time).toLocaleString() 
-                : '-';
-            
-            tr.innerHTML = `
-                <td>${session.participant.name}</td>
-                <td>${session.participant.email}</td>
-                <td><span class="status ${session.status}">${session.status}</span></td>
-                <td>${startDate}</td>
-                <td>${completedDate}</td>
-            `;
-            
-            return tr;
+            document.getElementById('total-count').textContent = total;
+            document.getElementById('completed-count').textContent = completed;
+            document.getElementById('in-progress-count').textContent = inProgress;
         }
 
         // JSON Management Modal
         function openJsonModal() {
             const modal = document.getElementById('json-modal');
             const tbody = document.getElementById('json-sessions-body');
-            tbody.innerHTML = '';
+            const messageDiv = document.getElementById('modal-message');
             
-            sessionsData.forEach(session => {
-                const tr = document.createElement('tr');
-                const startDate = new Date(session.start_time).toLocaleDateString();
-                
-                tr.innerHTML = `
-                    <td>${session.participant.name}</td>
-                    <td><span class="status ${session.status}">${session.status}</span></td>
-                    <td>${startDate}</td>
-                    <td>
-                        <button class="download-btn" onclick="downloadSession('${session.filename}')">
-                            ⬇️ Download
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
+            tbody.innerHTML = '';
+            messageDiv.innerHTML = '';
+            
+            if (sessionsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: #666;">No sessions yet</td></tr>';
+            } else {
+                sessionsData.forEach(session => {
+                    const tr = document.createElement('tr');
+                    const startDate = new Date(session.start_time).toLocaleDateString();
+                    
+                    tr.innerHTML = `
+                        <td>${session.participant.name}</td>
+                        <td><span class="status ${session.status}">${session.status}</span></td>
+                        <td>${startDate}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="download-btn" onclick="downloadSession('${session.filename}')">
+                                    ⬇️ Download
+                                </button>
+                                <button class="delete-btn" onclick="deleteSession('${session.filename}', '${session.participant.name}')">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
             
             modal.classList.add('active');
         }
@@ -409,6 +433,72 @@
             } catch (error) {
                 console.error('Error downloading all sessions:', error);
                 alert('Failed to download sessions');
+            }
+        }
+
+        async function deleteSession(filename, participantName) {
+            if (!confirm(`Delete session for ${participantName}?\n\nThis cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${filename}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to delete session');
+                }
+                
+                // Show success message
+                const messageDiv = document.getElementById('modal-message');
+                messageDiv.innerHTML = '<div class="success">Session deleted successfully</div>';
+                setTimeout(() => messageDiv.innerHTML = '', 3000);
+                
+                // Reload sessions and update modal
+                await loadSessions();
+                openJsonModal();
+                
+            } catch (error) {
+                console.error('Error deleting session:', error);
+                alert('Failed to delete session: ' + error.message);
+            }
+        }
+
+        async function deleteAll() {
+            if (!confirm(`Delete ALL ${sessionsData.length} sessions?\n\nThis will permanently delete all session data and CANNOT be undone.\n\nAre you absolutely sure?`)) {
+                return;
+            }
+            
+            // Double confirmation for dangerous action
+            if (!confirm('Final confirmation: Delete everything?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/sessions-all`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to delete sessions');
+                }
+                
+                // Show success message
+                const messageDiv = document.getElementById('modal-message');
+                messageDiv.innerHTML = `<div class="success">Deleted ${data.deleted_count} sessions successfully</div>`;
+                
+                // Reload sessions and update modal
+                await loadSessions();
+                openJsonModal();
+                
+            } catch (error) {
+                console.error('Error deleting all sessions:', error);
+                alert('Failed to delete sessions: ' + error.message);
             }
         }
 
