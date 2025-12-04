@@ -27,10 +27,11 @@
             color: #2c3e50;
             margin-bottom: 20px;
         }
-        .actions {
-            margin-bottom: 30px;
+        .main-actions {
             display: flex;
             gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
         }
         button {
             padding: 10px 20px;
@@ -45,12 +46,97 @@
         button:hover {
             background-color: #2980b9;
         }
-        .download-all {
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .btn-success {
             background-color: #27ae60;
         }
-        .download-all:hover {
+        .btn-success:hover {
             background-color: #229954;
         }
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        /* Analysis Results */
+        .analysis-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3498db;
+        }
+        .analysis-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+        .analysis-content {
+            white-space: pre-wrap;
+            line-height: 1.8;
+            color: #333;
+            font-size: 14px;
+        }
+        .analysis-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            width: 90%;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h2 {
+            color: #2c3e50;
+        }
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+        .close-modal:hover {
+            color: #333;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -94,6 +180,19 @@
             padding: 40px;
             color: #666;
         }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
         .error {
             background-color: #f8d7da;
             color: #721c24;
@@ -112,14 +211,26 @@
     <div class="container">
         <h1>📊 Session Data Admin</h1>
         
-        <div class="actions">
-            <button onclick="loadSessions()">🔄 Refresh</button>
-            <button class="download-all" onclick="downloadAll()">⬇️ Download All Sessions</button>
+        <div class="main-actions">
+            <button class="btn-success" onclick="runAnalysis()">🔍 Run Analysis</button>
+            <button class="btn-secondary" onclick="openJsonModal()">📁 Manage JSON Files</button>
+            <button onclick="loadSessions()">🔄 Refresh Sessions</button>
         </div>
 
         <div id="error" class="error" style="display: none;"></div>
-        <div id="count" class="count"></div>
         
+        <!-- Analysis Results Section (hidden by default) -->
+        <div id="analysis-section" class="analysis-section" style="display: none;">
+            <h2>Analysis Results</h2>
+            <div id="analysis-content" class="analysis-content"></div>
+            <div class="analysis-actions">
+                <button onclick="copyAnalysis()">📋 Copy to Clipboard</button>
+                <button onclick="downloadAnalysis()">⬇️ Download Report</button>
+            </div>
+        </div>
+
+        <!-- Sessions Overview -->
+        <div id="count" class="count"></div>
         <div id="loading" class="loading">Loading sessions...</div>
         
         <table id="sessions-table" style="display: none;">
@@ -130,15 +241,42 @@
                     <th>Status</th>
                     <th>Started</th>
                     <th>Completed</th>
-                    <th>Action</th>
                 </tr>
             </thead>
             <tbody id="sessions-body"></tbody>
         </table>
+
+        <!-- JSON Management Modal -->
+        <div id="json-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>JSON File Management</h2>
+                    <button class="close-modal" onclick="closeJsonModal()">×</button>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <button class="btn-success" onclick="downloadAll()">⬇️ Download All Sessions (Combined)</button>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Participant</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="json-sessions-body"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
         const API_BASE = '/api/admin';
+        let sessionsData = [];
+        let analysisResult = '';
 
         // Load on page load
         document.addEventListener('DOMContentLoaded', loadSessions);
@@ -161,11 +299,12 @@
                     throw new Error(data.error || 'Failed to load sessions');
                 }
                 
+                sessionsData = data.sessions;
                 const tbody = document.getElementById('sessions-body');
                 tbody.innerHTML = '';
                 
                 if (data.sessions.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #666;">No sessions yet</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #666;">No sessions yet</td></tr>';
                 } else {
                     data.sessions.forEach(session => {
                         const row = createSessionRow(session);
@@ -199,14 +338,40 @@
                 <td><span class="status ${session.status}">${session.status}</span></td>
                 <td>${startDate}</td>
                 <td>${completedDate}</td>
-                <td>
-                    <button class="download-btn" onclick="downloadSession('${session.filename}')">
-                        ⬇️ Download
-                    </button>
-                </td>
             `;
             
             return tr;
+        }
+
+        // JSON Management Modal
+        function openJsonModal() {
+            const modal = document.getElementById('json-modal');
+            const tbody = document.getElementById('json-sessions-body');
+            tbody.innerHTML = '';
+            
+            sessionsData.forEach(session => {
+                const tr = document.createElement('tr');
+                const startDate = new Date(session.start_time).toLocaleDateString();
+                
+                tr.innerHTML = `
+                    <td>${session.participant.name}</td>
+                    <td><span class="status ${session.status}">${session.status}</span></td>
+                    <td>${startDate}</td>
+                    <td>
+                        <button class="download-btn" onclick="downloadSession('${session.filename}')">
+                            ⬇️ Download
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            modal.classList.add('active');
+        }
+
+        function closeJsonModal() {
+            const modal = document.getElementById('json-modal');
+            modal.classList.remove('active');
         }
 
         async function downloadSession(filename) {
@@ -245,6 +410,61 @@
                 console.error('Error downloading all sessions:', error);
                 alert('Failed to download sessions');
             }
+        }
+
+        // Analysis Functions
+        async function runAnalysis() {
+            const analysisSection = document.getElementById('analysis-section');
+            const analysisContent = document.getElementById('analysis-content');
+            const errorDiv = document.getElementById('error');
+            
+            // Show loading
+            analysisSection.style.display = 'block';
+            analysisContent.innerHTML = '<div class="spinner"></div><p style="text-align: center;">Analyzing sessions... This may take 30-60 seconds.</p>';
+            errorDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE}/analyze`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+                
+                analysisResult = data.analysis;
+                analysisContent.textContent = data.analysis;
+                
+            } catch (error) {
+                console.error('Error running analysis:', error);
+                errorDiv.textContent = `Analysis Error: ${error.message}`;
+                errorDiv.style.display = 'block';
+                analysisSection.style.display = 'none';
+            }
+        }
+
+        function copyAnalysis() {
+            navigator.clipboard.writeText(analysisResult).then(() => {
+                alert('Analysis copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        function downloadAnalysis() {
+            const blob = new Blob([analysisResult], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const timestamp = new Date().toISOString().split('T')[0];
+            a.download = `nexted-analysis-${timestamp}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
         }
     </script>
 </body>

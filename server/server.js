@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
+const Anthropic = require('@anthropic-ai/sdk');
 const sessionManager = require('./session-manager');
 const claudeService = require('./claude-service');
 const config = require('./config');
@@ -10,6 +11,10 @@ const config = require('./config');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSIONS_DIR = path.join(__dirname, '../data/sessions');
+
+const anthropicClient = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 // Middleware
 app.use(cors());
@@ -235,6 +240,108 @@ app.get('/api/admin/sessions-all', async (req, res) => {
   }
 });
 
+// POST /api/admin/analyze - Run LLM analysis on all sessions
+app.post('/api/admin/analyze', async (req, res) => {
+  try {
+    console.log('Starting analysis...');
+    
+    // Read all session files
+    const files = await fs.readdir(SESSIONS_DIR);
+    const jsonFiles = files.filter(f => f.endsWith('.json'));
+    
+    if (jsonFiles.length === 0) {
+      return res.status(400).json({ error: 'No sessions to analyze' });
+    }
+    
+    const sessions = [];
+    for (const file of jsonFiles) {
+      const content = await fs.readFile(path.join(SESSIONS_DIR, file), 'utf8');
+      const data = JSON.parse(content);
+      
+      // Only analyze completed sessions
+      if (data.status === 'completed' && data.summary) {
+        sessions.push({
+          participant: data.participant.name,
+          summary: data.summary.confirmed || data.summary.initial,
+          // Include a few key conversation excerpts
+          conversationSnippets: data.conversation
+            .filter(msg => msg.role === 'user')
+            .slice(0, 5)
+            .map(msg => msg.content)
+        });
+      }
+    }
+    
+    if (sessions.length === 0) {
+      return res.status(400).json({ error: 'No completed sessions to analyze' });
+    }
+    
+    console.log(`Analyzing ${sessions.length} completed sessions...`);
+    
+    // Prepare data for Claude
+    const analysisPrompt = `You are analyzing feedback from a workshop about AI adoption in education. You have ${sessions.length} completed conversational interviews.
+
+YOUR TASK: Generate a comprehensive analysis report that demonstrates the value of conversational interviews over traditional surveys.
+
+DATA PROVIDED:
+${sessions.map((s, i) => `
+SESSION ${i + 1} - ${s.participant}
+SUMMARY:
+${s.summary}
+`).join('\n---\n')}
+
+ANALYSIS REQUIREMENTS:
+
+1. QUANTITATIVE FINDINGS (What traditional surveys would capture):
+   - Calculate participation metrics
+   - Count interest levels in each NextEd offering (DGX Workstations, Policy Board, Adoption Clinic)
+   - Identify top concerns and their frequency
+   - Categorize technical comfort levels
+   - Any other countable metrics
+
+2. QUALITATIVE INSIGHTS (What conversations reveal that surveys miss):
+   - WHY people are interested/not interested
+   - Specific use cases and contexts mentioned
+   - Unexpected findings or themes
+   - Contradictions or nuances (e.g., wanting AI help but fearing student misuse)
+   - Departmental/institutional barriers
+   - Representative quotes that illustrate key points
+
+3. COMPARATIVE ANALYSIS:
+   - Create a comparison showing what traditional surveys would get vs. what TIIS conversational method revealed
+   - Highlight actionable insights that surveys would miss
+   - Demonstrate depth and context
+
+4. RECOMMENDATIONS:
+   - Based on the insights, what should NextEd prioritize?
+   - Which faculty are early adopter candidates?
+   - What barriers need addressing first?
+
+FORMAT: Professional report with clear sections, data-driven, and compelling. Use specific numbers and percentages. Include representative quotes where they illustrate key points.
+
+Generate the analysis now:`;
+
+    // Send to Claude for analysis
+    const response = await anthropicClient.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [{
+        role: 'user',
+        content: analysisPrompt
+      }]
+    });
+    
+    const analysis = response.content[0].text;
+    
+    console.log('Analysis complete');
+    res.json({ analysis });
+    
+  } catch (error) {
+    console.error('Error running analysis:', error);
+    res.status(500).json({ error: 'Analysis failed: ' + error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
@@ -247,4 +354,5 @@ app.listen(PORT, () => {
   console.log('  GET /api/admin/sessions - List all sessions');
   console.log('  GET /api/admin/sessions/:filename - Download specific session');
   console.log('  GET /api/admin/sessions-all - Download all sessions');
+  console.log('  POST /api/admin/analyze - Run LLM analysis');
 });
