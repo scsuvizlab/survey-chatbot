@@ -7,18 +7,18 @@ let timerInterval = null;
 let startTime = null;
 let tenMinuteWarningShown = false;
 
-// Topic tracking
+// Topic tracking - based on USER engagement, not bot mentions
 const topics = [
-    { label: "Workshop Experience", covered: false, keywords: ["workshop", "experience", "impressions", "stood out"] },
-    { label: "Specific Content", covered: false, keywords: ["content", "sessions", "resonated", "specific"] },
-    { label: "Newton Song Demo", covered: false, keywords: ["newton", "song", "demonstration", "demo", "music"] },
-    { label: "NextEd Interest", covered: false, keywords: ["nexted", "dgx", "workstation", "policy board", "adoption clinic", "spark"] },
-    { label: "AI Concerns", covered: false, keywords: ["concerns", "reservations", "worried", "hesitant", "skeptical"] },
-    { label: "Adoption Barriers", covered: false, keywords: ["barriers", "obstacles", "challenges", "difficulty", "prevent"] },
-    { label: "Technical Comfort", covered: false, keywords: ["comfort", "familiar", "tools", "technical", "use", "experience with"] },
-    { label: "Course Ideas", covered: false, keywords: ["course", "redesign", "teaching", "class", "curriculum", "student"] },
-    { label: "Support Needs", covered: false, keywords: ["support", "help", "need", "assistance", "guidance", "provide"] },
-    { label: "Data Privacy", covered: false, keywords: ["privacy", "security", "data", "confidential", "sensitive"] }
+    { label: "Workshop Experience", covered: false, keywords: ["workshop", "experience", "impressed", "liked", "enjoyed", "stood out", "thought", "felt"] },
+    { label: "Specific Content", covered: false, keywords: ["session", "presentation", "content", "demonstration", "part", "section"] },
+    { label: "Newton Song Demo", covered: false, keywords: ["song", "music", "newton", "creative", "suno"] },
+    { label: "NextEd Interest", covered: false, keywords: ["interested", "dgx", "workstation", "policy board", "adoption clinic", "participate", "join"] },
+    { label: "AI Concerns", covered: false, keywords: ["concerned", "worried", "hesitant", "scared", "nervous", "uncomfortable", "skeptical"] },
+    { label: "Adoption Barriers", covered: false, keywords: ["difficult", "hard", "challenge", "barrier", "obstacle", "prevent", "problem", "issue"] },
+    { label: "Technical Comfort", covered: false, keywords: ["use", "tried", "familiar", "comfortable", "know how", "experience with", "worked with"] },
+    { label: "Course Ideas", covered: false, keywords: ["course", "class", "teach", "students", "assignment", "curriculum", "lesson"] },
+    { label: "Support Needs", covered: false, keywords: ["need", "want", "help", "support", "would like", "looking for", "hoping"] },
+    { label: "Data Privacy", covered: false, keywords: ["privacy", "security", "confidential", "sensitive", "data", "protect", "safe"] }
 ];
 
 // DOM Elements
@@ -85,7 +85,13 @@ function updateTopicProgress() {
     renderTopics();
 }
 
-function checkTopicCoverage(message) {
+function checkTopicCoverage(message, isUser) {
+    // ONLY check user messages, not bot messages
+    if (!isUser) return;
+    
+    // Require substantive response (>20 characters, not just "yes" or "ok")
+    if (message.length < 20) return;
+    
     const lowerMessage = message.toLowerCase();
     let updated = false;
     
@@ -189,11 +195,8 @@ async function handleInitialSubmit(e) {
             initialForm.classList.add('hidden');
             chatInterface.classList.remove('hidden');
             
-            // Display bot's greeting
+            // Display bot's greeting (don't track topics from greeting)
             addMessage('bot', data.message);
-            
-            // Check for topic coverage in greeting
-            checkTopicCoverage(data.message);
             
             // Start timer
             startTimer();
@@ -259,6 +262,9 @@ async function handleSendMessage() {
     const message = userInput.value.trim();
     if (!message) return;
     
+    // Check topic coverage for USER message
+    checkTopicCoverage(message, true);
+    
     // Display user message
     addMessage('user', message);
     
@@ -281,11 +287,8 @@ async function handleSendMessage() {
         hideTypingIndicator();
         
         if (response.ok) {
-            // Display bot response
+            // Display bot response (don't track topics from bot messages)
             addMessage('bot', data.message);
-            
-            // Check for topic coverage
-            checkTopicCoverage(data.message);
             
             // Check if this is a summary presentation
             if (isSummaryMessage(data.message)) {
