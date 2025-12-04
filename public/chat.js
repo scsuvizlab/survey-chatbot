@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:3000/api';
+// Use relative path - works both locally and on Render
+const API_BASE = '/api';
 
 let sessionId = null;
 let conversationEnded = false;
