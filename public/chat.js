@@ -7,6 +7,20 @@ let timerInterval = null;
 let startTime = null;
 let tenMinuteWarningShown = false;
 
+// Topic tracking
+const topics = [
+    { label: "Workshop Experience", covered: false, keywords: ["workshop", "experience", "impressions", "stood out"] },
+    { label: "Specific Content", covered: false, keywords: ["content", "sessions", "resonated", "specific"] },
+    { label: "Newton Song Demo", covered: false, keywords: ["newton", "song", "demonstration", "demo", "music"] },
+    { label: "NextEd Interest", covered: false, keywords: ["nexted", "dgx", "workstation", "policy board", "adoption clinic", "spark"] },
+    { label: "AI Concerns", covered: false, keywords: ["concerns", "reservations", "worried", "hesitant", "skeptical"] },
+    { label: "Adoption Barriers", covered: false, keywords: ["barriers", "obstacles", "challenges", "difficulty", "prevent"] },
+    { label: "Technical Comfort", covered: false, keywords: ["comfort", "familiar", "tools", "technical", "use", "experience with"] },
+    { label: "Course Ideas", covered: false, keywords: ["course", "redesign", "teaching", "class", "curriculum", "student"] },
+    { label: "Support Needs", covered: false, keywords: ["support", "help", "need", "assistance", "guidance", "provide"] },
+    { label: "Data Privacy", covered: false, keywords: ["privacy", "security", "data", "confidential", "sensitive"] }
+];
+
 // DOM Elements
 const initialForm = document.getElementById('initial-form');
 const userInfoForm = document.getElementById('user-info-form');
@@ -23,6 +37,9 @@ const helpBtn = document.getElementById('help-btn');
 const endConversationBtn = document.getElementById('end-conversation-btn');
 const timerDisplay = document.getElementById('timer');
 const helpModal = document.getElementById('help-modal');
+const progressBtn = document.getElementById('progress-btn');
+const progressText = document.getElementById('progress-text');
+const topicDropdown = document.getElementById('topic-dropdown');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -33,7 +50,79 @@ document.addEventListener('DOMContentLoaded', () => {
     approveBtn.addEventListener('click', handleApprove);
     helpBtn.addEventListener('click', showHelp);
     endConversationBtn.addEventListener('click', handleEndConversation);
+    progressBtn.addEventListener('click', toggleTopicDropdown);
+    
+    // Initialize topic dropdown
+    renderTopics();
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!progressBtn.contains(e.target) && !topicDropdown.contains(e.target)) {
+            closeTopicDropdown();
+        }
+    });
 });
+
+// Topic Functions
+function renderTopics() {
+    const topicList = document.querySelector('.topic-list');
+    topicList.innerHTML = '';
+    
+    topics.forEach((topic, index) => {
+        const item = document.createElement('div');
+        item.className = `topic-item ${topic.covered ? 'covered' : ''}`;
+        item.innerHTML = `
+            <div class="topic-checkbox ${topic.covered ? 'covered' : ''}"></div>
+            <span class="topic-text">${topic.label}</span>
+        `;
+        topicList.appendChild(item);
+    });
+}
+
+function updateTopicProgress() {
+    const coveredCount = topics.filter(t => t.covered).length;
+    progressText.textContent = `${coveredCount}/10 topics`;
+    renderTopics();
+}
+
+function checkTopicCoverage(message) {
+    const lowerMessage = message.toLowerCase();
+    let updated = false;
+    
+    topics.forEach(topic => {
+        if (!topic.covered) {
+            // Check if any keywords match
+            const hasKeyword = topic.keywords.some(keyword => 
+                lowerMessage.includes(keyword.toLowerCase())
+            );
+            
+            if (hasKeyword) {
+                topic.covered = true;
+                updated = true;
+            }
+        }
+    });
+    
+    if (updated) {
+        updateTopicProgress();
+    }
+}
+
+function toggleTopicDropdown() {
+    const isHidden = topicDropdown.classList.contains('hidden');
+    
+    if (isHidden) {
+        topicDropdown.classList.remove('hidden');
+        progressBtn.classList.add('active');
+    } else {
+        closeTopicDropdown();
+    }
+}
+
+function closeTopicDropdown() {
+    topicDropdown.classList.add('hidden');
+    progressBtn.classList.remove('active');
+}
 
 // Timer Functions
 function startTimer() {
@@ -103,6 +192,9 @@ async function handleInitialSubmit(e) {
             // Display bot's greeting
             addMessage('bot', data.message);
             
+            // Check for topic coverage in greeting
+            checkTopicCoverage(data.message);
+            
             // Start timer
             startTimer();
             
@@ -127,6 +219,7 @@ async function handleEndConversation() {
     // Disable controls
     setInputEnabled(false);
     endConversationBtn.disabled = true;
+    closeTopicDropdown();
     
     // Show typing indicator
     showTypingIndicator();
@@ -191,10 +284,14 @@ async function handleSendMessage() {
             // Display bot response
             addMessage('bot', data.message);
             
+            // Check for topic coverage
+            checkTopicCoverage(data.message);
+            
             // Check if this is a summary presentation
             if (isSummaryMessage(data.message)) {
                 // Bot initiated summary - stop timer and show modal
                 stopTimer();
+                closeTopicDropdown();
                 setTimeout(() => showSummaryModal(data.message), 1000);
             } else {
                 setInputEnabled(true);

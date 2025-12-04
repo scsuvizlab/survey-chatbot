@@ -123,11 +123,20 @@ h1 {
     display: flex;
     align-items: center;
     gap: 15px;
+    flex: 1;
+}
+
+.controls-center {
+    display: flex;
+    justify-content: center;
+    flex: 1;
 }
 
 .controls-right {
     display: flex;
+    justify-content: flex-end;
     align-items: center;
+    flex: 1;
 }
 
 .btn-icon {
@@ -150,6 +159,110 @@ h1 {
     font-size: 14px;
     color: #666;
     font-weight: 600;
+}
+
+/* Progress Indicator */
+.progress-container {
+    position: relative;
+    display: inline-block;
+}
+
+.progress-button {
+    background-color: white;
+    border: 2px solid #3498db;
+    color: #3498db;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.progress-button:hover {
+    background-color: #e8f4f8;
+}
+
+.progress-button.active {
+    background-color: #3498db;
+    color: white;
+}
+
+.dropdown-arrow {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.progress-button.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.topic-dropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white;
+    border: 2px solid #3498db;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 100;
+    min-width: 280px;
+    max-width: 350px;
+}
+
+.topic-list {
+    padding: 10px 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.topic-item {
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+    cursor: default;
+}
+
+.topic-item:hover {
+    background-color: #f8f9fa;
+}
+
+.topic-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ddd;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.topic-checkbox.covered {
+    background-color: #27ae60;
+    border-color: #27ae60;
+    color: white;
+}
+
+.topic-checkbox.covered::before {
+    content: '✓';
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.topic-text {
+    color: #555;
+}
+
+.topic-item.covered .topic-text {
+    color: #27ae60;
 }
 
 .btn-end {
@@ -448,8 +561,26 @@ h1 {
         gap: 10px;
     }
 
+    .controls-left, 
+    .controls-center, 
+    .controls-right {
+        flex: auto;
+    }
+
+    .controls-center {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
     .btn-end {
         font-size: 12px;
         padding: 6px 12px;
+    }
+
+    .topic-dropdown {
+        left: 0;
+        transform: none;
+        width: 100%;
     }
 }

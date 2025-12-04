@@ -45,6 +45,20 @@
                     <button id="help-btn" class="btn-icon" title="Help">ℹ️ Help</button>
                     <span id="timer" class="timer">00:00</span>
                 </div>
+                <div class="controls-center">
+                    <!-- Progress Indicator with Dropdown -->
+                    <div class="progress-container">
+                        <button id="progress-btn" class="progress-button">
+                            <span id="progress-text">0/10 topics</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div id="topic-dropdown" class="topic-dropdown hidden">
+                            <div class="topic-list">
+                                <!-- Topics will be dynamically inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="controls-right">
                     <button id="end-conversation-btn" class="btn-end">✓ I'm Done</button>
                 </div>
@@ -90,6 +104,7 @@
                     <h3>What to Expect</h3>
                     <ul>
                         <li><strong>Duration:</strong> About 5-10 minutes</li>
+                        <li><strong>Topics:</strong> We'll cover 10 topics about the workshop - you can see progress at the top</li>
                         <li><strong>Format:</strong> Natural conversation with follow-up questions</li>
                         <li><strong>Your answers:</strong> Can be any length - detailed, brief, "I don't know," or "I'd rather not say" are all valid</li>
                         <li><strong>Timer:</strong> You'll see elapsed time in the top-left. After 10 minutes, the bot will remind you of the time</li>
@@ -111,6 +126,7 @@
 
                     <h3>Tips</h3>
                     <ul>
+                        <li>Click the topic progress indicator to see which topics will be covered</li>
                         <li>Be as honest and detailed (or brief) as you want</li>
                         <li>The bot won't offer solutions - it's here to listen and understand</li>
                         <li>Press Enter for new lines, click Send to submit</li>

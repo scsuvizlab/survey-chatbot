@@ -16,6 +16,7 @@ We had lunch catered by Brava Burritos with a taco bar that was very well receiv
 
 Participants included AI-curious faculty, some skeptics, and a few business partners (not from MN State).`;
 
+// Core topics with full descriptions (for system prompt)
 const coreTopics = [
   "Overall workshop experience and impressions",
   "Specific content or sessions that resonated (or didn't)",
@@ -27,6 +28,20 @@ const coreTopics = [
   "Specific course ideas or redesign concepts",
   "What kind of support would be most helpful from NextEd",
   "Data privacy or security concerns"
+];
+
+// Shorter labels for UI display
+const topicLabels = [
+  "Workshop Experience",
+  "Specific Content",
+  "Newton Song Demo",
+  "NextEd Interest",
+  "AI Concerns",
+  "Adoption Barriers",
+  "Technical Comfort",
+  "Course Ideas",
+  "Support Needs",
+  "Data Privacy"
 ];
 
 // This greeting is sent after user submits name/email form
@@ -46,5 +61,6 @@ I'm curious to start with your overall impressions - how did today's workshop la
 module.exports = {
   workshopContext,
   coreTopics,
+  topicLabels,
   getInitialGreeting
 };
