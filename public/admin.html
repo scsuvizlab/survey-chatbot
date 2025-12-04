@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Data Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .actions {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .download-all {
+            background-color: #27ae60;
+        }
+        .download-all:hover {
+            background-color: #229954;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status.completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.in-progress {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .download-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            background-color: #3498db;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .count {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Session Data Admin</h1>
+        
+        <div class="actions">
+            <button onclick="loadSessions()">🔄 Refresh</button>
+            <button class="download-all" onclick="downloadAll()">⬇️ Download All Sessions</button>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="count" class="count"></div>
+        
+        <div id="loading" class="loading">Loading sessions...</div>
+        
+        <table id="sessions-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Participant</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Started</th>
+                    <th>Completed</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="sessions-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const API_BASE = '/api/admin';
+
+        // Load on page load
+        document.addEventListener('DOMContentLoaded', loadSessions);
+
+        async function loadSessions() {
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('sessions-table');
+            const errorDiv = document.getElementById('error');
+            const countDiv = document.getElementById('count');
+            
+            loading.style.display = 'block';
+            table.style.display = 'none';
+            errorDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE}/sessions`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load sessions');
+                }
+                
+                const tbody = document.getElementById('sessions-body');
+                tbody.innerHTML = '';
+                
+                if (data.sessions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #666;">No sessions yet</td></tr>';
+                } else {
+                    data.sessions.forEach(session => {
+                        const row = createSessionRow(session);
+                        tbody.appendChild(row);
+                    });
+                }
+                
+                countDiv.textContent = `Total sessions: ${data.sessions.length}`;
+                loading.style.display = 'none';
+                table.style.display = 'table';
+                
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                errorDiv.textContent = `Error: ${error.message}`;
+                errorDiv.style.display = 'block';
+                loading.style.display = 'none';
+            }
+        }
+
+        function createSessionRow(session) {
+            const tr = document.createElement('tr');
+            
+            const startDate = new Date(session.start_time).toLocaleString();
+            const completedDate = session.completed_time 
+                ? new Date(session.completed_time).toLocaleString() 
+                : '-';
+            
+            tr.innerHTML = `
+                <td>${session.participant.name}</td>
+                <td>${session.participant.email}</td>
+                <td><span class="status ${session.status}">${session.status}</span></td>
+                <td>${startDate}</td>
+                <td>${completedDate}</td>
+                <td>
+                    <button class="download-btn" onclick="downloadSession('${session.filename}')">
+                        ⬇️ Download
+                    </button>
+                </td>
+            `;
+            
+            return tr;
+        }
+
+        async function downloadSession(filename) {
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${filename}`);
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('Error downloading session:', error);
+                alert('Failed to download session');
+            }
+        }
+
+        async function downloadAll() {
+            try {
+                const response = await fetch(`${API_BASE}/sessions-all`);
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'all-sessions.json';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('Error downloading all sessions:', error);
+                alert('Failed to download sessions');
+            }
+        }
+    </script>
+</body>
+</html>

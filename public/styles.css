@@ -84,6 +84,21 @@ h1 {
     border-color: #3498db;
 }
 
+.help-link {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.help-link a {
+    color: #3498db;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.help-link a:hover {
+    text-decoration: underline;
+}
+
 /* Chat Interface */
 #chat-interface {
     background-color: white;
@@ -96,10 +111,61 @@ h1 {
 }
 
 .controls-area {
-    padding: 10px;
+    padding: 10px 15px;
     border-bottom: 1px solid #e0e0e0;
-    min-height: 40px;
-    /* Space for future audio toggle */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fafafa;
+}
+
+.controls-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.controls-right {
+    display: flex;
+    align-items: center;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px 10px;
+    color: #3498db;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+}
+
+.btn-icon:hover {
+    background-color: #e8f4f8;
+}
+
+.timer {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #666;
+    font-weight: 600;
+}
+
+.btn-end {
+    padding: 8px 16px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-end:hover {
+    background-color: #229954;
 }
 
 .messages-container {
@@ -240,7 +306,7 @@ h1 {
     cursor: not-allowed;
 }
 
-/* Summary Modal */
+/* Modals */
 .modal {
     position: fixed;
     top: 0;
@@ -275,6 +341,30 @@ h1 {
     line-height: 1.6;
 }
 
+/* Help Modal Specific */
+.help-content h3 {
+    color: #2c3e50;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.help-content h3:first-child {
+    margin-top: 0;
+}
+
+.help-content ul {
+    margin-left: 20px;
+    margin-bottom: 15px;
+    line-height: 1.8;
+    color: #555;
+}
+
+.help-content strong {
+    color: #2c3e50;
+}
+
+/* Summary Modal */
 .summary-text {
     background-color: #f8f9fa;
     padding: 20px;
@@ -351,5 +441,15 @@ h1 {
 
     .banner img {
         padding: 0 10px;
+    }
+
+    .controls-area {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .btn-end {
+        font-size: 12px;
+        padding: 6px 12px;
     }
 }

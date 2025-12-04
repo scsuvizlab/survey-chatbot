@@ -3,6 +3,9 @@ const API_BASE = '/api';
 
 let sessionId = null;
 let conversationEnded = false;
+let timerInterval = null;
+let startTime = null;
+let tenMinuteWarningShown = false;
 
 // DOM Elements
 const initialForm = document.getElementById('initial-form');
@@ -16,6 +19,10 @@ const summaryModal = document.getElementById('summary-modal');
 const summaryText = document.getElementById('summary-text');
 const modifyBtn = document.getElementById('modify-btn');
 const approveBtn = document.getElementById('approve-btn');
+const helpBtn = document.getElementById('help-btn');
+const endConversationBtn = document.getElementById('end-conversation-btn');
+const timerDisplay = document.getElementById('timer');
+const helpModal = document.getElementById('help-modal');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,7 +31,49 @@ document.addEventListener('DOMContentLoaded', () => {
     userInput.addEventListener('keydown', handleKeyPress);
     modifyBtn.addEventListener('click', handleModify);
     approveBtn.addEventListener('click', handleApprove);
+    helpBtn.addEventListener('click', showHelp);
+    endConversationBtn.addEventListener('click', handleEndConversation);
 });
+
+// Timer Functions
+function startTimer() {
+    startTime = Date.now();
+    tenMinuteWarningShown = false;
+    
+    timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        
+        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+        // Check for 10-minute mark
+        if (minutes >= 10 && !tenMinuteWarningShown) {
+            tenMinuteWarningShown = true;
+            addMessage('bot', '⏰ Just a heads up - we\'ve been chatting for 10 minutes. Feel free to continue or click "I\'m Done" whenever you\'re ready to wrap up.');
+        }
+    }, 1000);
+}
+
+function stopTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+}
+
+// Help Modal Functions
+function showHelp() {
+    helpModal.classList.remove('hidden');
+}
+
+function hideHelp() {
+    helpModal.classList.add('hidden');
+}
+
+// Make these globally accessible
+window.showHelp = showHelp;
+window.hideHelp = hideHelp;
 
 // Handle initial form submission
 async function handleInitialSubmit(e) {
@@ -54,6 +103,9 @@ async function handleInitialSubmit(e) {
             // Display bot's greeting
             addMessage('bot', data.message);
             
+            // Start timer
+            startTimer();
+            
             // Focus on input
             userInput.focus();
         } else {
@@ -62,6 +114,48 @@ async function handleInitialSubmit(e) {
     } catch (error) {
         console.error('Error:', error);
         alert('Failed to connect to server. Please try again.');
+    }
+}
+
+// Handle "I'm Done" button
+async function handleEndConversation() {
+    if (conversationEnded) return;
+    
+    // Stop timer
+    stopTimer();
+    
+    // Disable controls
+    setInputEnabled(false);
+    endConversationBtn.disabled = true;
+    
+    // Show typing indicator
+    showTypingIndicator();
+    
+    try {
+        const response = await fetch(`${API_BASE}/summary`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId })
+        });
+        
+        const data = await response.json();
+        
+        hideTypingIndicator();
+        
+        if (response.ok) {
+            // Show summary modal
+            showSummaryModal(data.summary);
+        } else {
+            alert('Error generating summary: ' + data.error);
+            setInputEnabled(true);
+            endConversationBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        hideTypingIndicator();
+        alert('Failed to end conversation. Please try again.');
+        setInputEnabled(true);
+        endConversationBtn.disabled = false;
     }
 }
 
@@ -99,7 +193,8 @@ async function handleSendMessage() {
             
             // Check if this is a summary presentation
             if (isSummaryMessage(data.message)) {
-                // Wait a moment, then show summary modal
+                // Bot initiated summary - stop timer and show modal
+                stopTimer();
                 setTimeout(() => showSummaryModal(data.message), 1000);
             } else {
                 setInputEnabled(true);
@@ -158,6 +253,7 @@ function hideTypingIndicator() {
 function setInputEnabled(enabled) {
     userInput.disabled = !enabled;
     sendBtn.disabled = !enabled;
+    endConversationBtn.disabled = !enabled;
 }
 
 // Show summary modal
@@ -175,6 +271,7 @@ function hideSummaryModal() {
 function handleModify() {
     hideSummaryModal();
     setInputEnabled(true);
+    startTimer(); // Restart timer if they want to continue
     userInput.focus();
     addMessage('bot', 'Please share any clarifications or additions you\'d like to make.');
 }
@@ -199,6 +296,7 @@ async function handleApprove() {
             addMessage('bot', 'Thank you for your time and thoughtful responses! Your feedback has been saved. You may now close this window.');
             conversationEnded = true;
             setInputEnabled(false);
+            stopTimer();
         } else {
             alert('Error completing session. Please try again.');
         }

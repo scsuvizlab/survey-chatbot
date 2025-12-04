@@ -31,14 +31,23 @@
                     </div>
                     <button type="submit" class="btn-primary">Start Conversation</button>
                 </form>
+                <div class="help-link">
+                    <a href="#" onclick="showHelp(); return false;">ℹ️ How does this work?</a>
+                </div>
             </div>
         </div>
 
         <!-- Chat Interface (hidden initially) -->
         <div id="chat-interface" class="hidden">
-            <!-- Future controls area -->
+            <!-- Controls area -->
             <div class="controls-area">
-                <!-- Space for future audio toggle button -->
+                <div class="controls-left">
+                    <button id="help-btn" class="btn-icon" title="Help">ℹ️ Help</button>
+                    <span id="timer" class="timer">00:00</span>
+                </div>
+                <div class="controls-right">
+                    <button id="end-conversation-btn" class="btn-end">✓ I'm Done</button>
+                </div>
             </div>
 
             <!-- Messages Display -->
@@ -67,6 +76,48 @@
                 ></textarea>
                 
                 <button id="send-btn" class="btn-send">Send</button>
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>How This Works</h2>
+                <div class="help-content">
+                    <h3>About This Tool</h3>
+                    <p>This is a conversational feedback tool that uses AI (Claude by Anthropic) to gather your thoughts about the VizLab AI Workshop in a more natural, exploratory way than traditional surveys.</p>
+                    
+                    <h3>What to Expect</h3>
+                    <ul>
+                        <li><strong>Duration:</strong> About 5-10 minutes</li>
+                        <li><strong>Format:</strong> Natural conversation with follow-up questions</li>
+                        <li><strong>Your answers:</strong> Can be any length - detailed, brief, "I don't know," or "I'd rather not say" are all valid</li>
+                        <li><strong>Timer:</strong> You'll see elapsed time in the top-left. After 10 minutes, the bot will remind you of the time</li>
+                    </ul>
+
+                    <h3>Your Data</h3>
+                    <ul>
+                        <li>The conversation is saved for the NextEd team to review</li>
+                        <li>At the end, you'll see a summary to review and approve</li>
+                        <li>Sessions can't be resumed - if you close this window, you'd need to start over</li>
+                    </ul>
+
+                    <h3>How to End</h3>
+                    <ul>
+                        <li>Click <strong>"I'm Done"</strong> at any time to wrap up the conversation</li>
+                        <li>The bot will generate a summary for you to review</li>
+                        <li>You can approve it or go back to add more</li>
+                    </ul>
+
+                    <h3>Tips</h3>
+                    <ul>
+                        <li>Be as honest and detailed (or brief) as you want</li>
+                        <li>The bot won't offer solutions - it's here to listen and understand</li>
+                        <li>Press Enter for new lines, click Send to submit</li>
+                        <li>If you want to move on from a topic, just say so</li>
+                    </ul>
+                </div>
+                <button class="btn-primary" onclick="hideHelp()">Got It</button>
             </div>
         </div>
 
