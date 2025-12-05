@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NextEd Survey Chatbot</title>
+    <title>Faculty AI Survey</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,13 +13,14 @@
     </div>
 
     <div class="container">
-        <h1>NextEd Survey Chatbot</h1>
+        <h1>Faculty AI Adoption Survey</h1>
 
         <!-- Initial Form (visible by default) -->
         <div id="initial-form" class="form-overlay">
             <div class="form-content">
                 <h2>Welcome!</h2>
-                <p>Please provide your information to begin the conversation.</p>
+                <p>This survey explores your thoughts about AI in teaching. It combines structured questions with opportunities to elaborate when topics get complex.</p>
+                <p><strong>Estimated time:</strong> 10-30 minutes (depending on detail)</p>
                 <form id="user-info-form">
                     <div class="form-group">
                         <label for="name">Name:</label>
@@ -29,7 +30,7 @@
                         <label for="email">Email:</label>
                         <input type="email" id="email" name="email" required>
                     </div>
-                    <button type="submit" class="btn-primary">Start Conversation</button>
+                    <button type="submit" class="btn-primary">Start Survey</button>
                 </form>
                 <div class="help-link">
                     <a href="#" onclick="showHelp(); return false;">ℹ️ How does this work?</a>
@@ -46,15 +47,15 @@
                     <span id="timer" class="timer">00:00</span>
                 </div>
                 <div class="controls-center">
-                    <!-- Progress Indicator with Dropdown -->
+                    <!-- Section Progress Indicator -->
                     <div class="progress-container">
                         <button id="progress-btn" class="progress-button">
-                            <span id="progress-text">0/8 topics</span>
+                            <span id="progress-text">Section 1 of 6</span>
                             <span class="dropdown-arrow">▼</span>
                         </button>
-                        <div id="topic-dropdown" class="topic-dropdown hidden">
+                        <div id="section-dropdown" class="topic-dropdown hidden">
                             <div class="topic-list">
-                                <!-- Topics will be dynamically inserted here -->
+                                <!-- Sections will be dynamically inserted here -->
                             </div>
                         </div>
                     </div>
@@ -80,12 +81,11 @@
 
             <!-- Input Area -->
             <div class="input-area">
-                <!-- Space for future microphone button -->
                 <div class="mic-placeholder"></div>
                 
                 <textarea 
                     id="user-input" 
-                    placeholder="Type your message here..."
+                    placeholder="Type your response here..."
                     rows="2"
                 ></textarea>
                 
@@ -96,62 +96,60 @@
         <!-- Help Modal -->
         <div id="help-modal" class="modal hidden">
             <div class="modal-content">
-                <h2>How This Works</h2>
+                <h2>How This Survey Works</h2>
                 <div class="help-content">
-                    <h3>About This Tool</h3>
-                    <p>This is a conversational feedback tool that uses AI (Claude by Anthropic) to gather your thoughts about the VizLab AI Workshop in a more natural, exploratory way than traditional surveys.</p>
+                    <h3>About This Survey</h3>
+                    <p>This is a hybrid survey that combines structured questions (like ratings and True/False) with conversational follow-ups when your answers indicate complexity or high interest.</p>
                     
                     <h3>What to Expect</h3>
                     <ul>
-                        <li><strong>Duration:</strong> About 5-10 minutes</li>
-                        <li><strong>Topics:</strong> We'll cover 8 topics about the workshop - you can see progress at the top</li>
-                        <li><strong>Format:</strong> Natural conversation with follow-up questions</li>
-                        <li><strong>Your answers:</strong> Can be any length - detailed, brief, "I don't know," or "I'd rather not say" are all valid</li>
-                        <li><strong>Timer:</strong> You'll see elapsed time in the top-left. After 10 minutes, the bot will remind you of the time</li>
+                        <li><strong>Duration:</strong> 10-30 minutes (depending on how much detail you provide)</li>
+                        <li><strong>Structure:</strong> 6 sections covering different aspects of AI in teaching</li>
+                        <li><strong>Format:</strong> One question at a time with optional deeper discussions</li>
+                        <li><strong>Progress:</strong> See which section you're in at the top</li>
+                    </ul>
+
+                    <h3>Answering Questions</h3>
+                    <p>Questions are presented one at a time. You can answer in any format:</p>
+                    <ul>
+                        <li><strong>Direct:</strong> "5" or "Weekly" or "True"</li>
+                        <li><strong>With context:</strong> "5 because I use it for lesson planning daily"</li>
+                        <li><strong>Complex:</strong> "It depends - for some courses yes, but for others no"</li>
+                        <li><strong>It depends:</strong> This triggers follow-up questions to understand nuance</li>
                     </ul>
 
                     <h3>You're In Control</h3>
-                    <p>You can guide the conversation by simply telling the bot what you want:</p>
                     <ul>
-                        <li><strong>Move on:</strong> Say "next question" or "let's move on" to skip to another topic</li>
-                        <li><strong>Revisit a topic:</strong> Ask "can we talk more about [topic]?" to return to something earlier</li>
-                        <li><strong>End early:</strong> Say "I'm ready to wrap up" or click the "I'm Done" button</li>
-                        <li><strong>Clarify:</strong> Ask "what do you mean?" if a question isn't clear</li>
+                        <li><strong>Skip questions:</strong> Say "I don't know" or "skip this"</li>
+                        <li><strong>Move on:</strong> Say "next section" to continue</li>
+                        <li><strong>End early:</strong> Click "I'm Done" or say "I'm ready to finish"</li>
+                        <li><strong>Ask for clarity:</strong> Say "what do you mean?" if confused</li>
                     </ul>
 
                     <h3>Your Data</h3>
                     <ul>
-                        <li>The conversation is saved for the NextEd team to review</li>
-                        <li>At the end, you'll see a summary to review and approve</li>
-                        <li>Sessions can't be resumed - if you close this window, you'd need to start over</li>
-                    </ul>
-
-                    <h3>How to End</h3>
-                    <ul>
-                        <li>Click <strong>"I'm Done"</strong> at any time to wrap up the conversation</li>
-                        <li>Or simply say "I'm ready to finish" in the chat</li>
-                        <li>The bot will generate a summary for you to review</li>
-                        <li>You can approve it or go back to add more</li>
+                        <li>Responses are saved for NextEd program planning</li>
+                        <li>You'll review a summary before submitting</li>
+                        <li>Cannot resume if you close the window</li>
                     </ul>
 
                     <h3>Tips</h3>
                     <ul>
-                        <li>Click the topic progress indicator to see which topics will be covered</li>
-                        <li>Be as honest and detailed (or brief) as you want</li>
-                        <li>The bot won't offer solutions - it's here to listen and understand</li>
+                        <li>The bot adapts - complex answers get follow-ups, brief answers move on quickly</li>
+                        <li>You can elaborate as much or as little as you want</li>
+                        <li>Check section progress to see where you are</li>
                         <li>Press Enter for new lines, click Send to submit</li>
-                        <li>Don't feel stuck on any topic - you can always move on</li>
                     </ul>
                 </div>
                 <button class="btn-primary" onclick="hideHelp()">Got It</button>
             </div>
         </div>
 
-        <!-- Summary Modal (hidden initially) -->
+        <!-- Summary Modal -->
         <div id="summary-modal" class="modal hidden">
             <div class="modal-content">
-                <h2>Conversation Summary</h2>
-                <p>Please review this summary of our conversation. You can approve it to complete the session, or modify it if you'd like to add or clarify anything.</p>
+                <h2>Survey Summary</h2>
+                <p>Please review this summary of your responses. You can approve it to complete the survey, or modify it if you'd like to add or clarify anything.</p>
                 <div id="summary-text" class="summary-text"></div>
                 <div class="modal-buttons">
                     <button id="modify-btn" class="btn-secondary">Modify</button>
@@ -161,6 +159,6 @@
         </div>
     </div>
 
-    <script src="chat.js"></script>
+    <script src="faculty-survey.js"></script>
 </body>
 </html>

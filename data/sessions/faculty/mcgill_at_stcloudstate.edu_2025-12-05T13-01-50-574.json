@@ -1,0 +1,244 @@
+{
+  "session_id": "6d666395-5b63-4903-898a-241435d54c33",
+  "survey_type": "faculty",
+  "status": "completed",
+  "participant": {
+    "name": "Mark",
+    "email": "mcgill@stcloudstate.edu",
+    "start_time": "2025-12-05T13:01:50.574Z"
+  },
+  "conversation": [
+    {
+      "role": "assistant",
+      "content": "Hi Mark! Thanks for taking time to share your thoughts about AI in teaching.\n\nThis is a hybrid survey - I'll ask you questions one at a time, and when your answers indicate complexity or high interest, I'll ask follow-up questions to understand better.\n\nThe survey has 6 sections and typically takes 10-30 minutes depending on how much detail you want to provide. You're in control - you can keep responses brief or elaborate as much as you'd like.\n\nLet's start with your current experience with AI tools.\n\nWhich AI tools have you tried? (List any, or say 'none yet')",
+      "timestamp": "2025-12-05T13:01:50.578Z"
+    },
+    {
+      "role": "user",
+      "content": "none yet",
+      "timestamp": "2025-12-05T13:01:58.247Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Welcome to the St. Cloud State University Faculty AI Adoption Survey! This will help us understand how faculty are currently using AI and what support would be most helpful.\n\nLet's start with your current AI experience.\n\nHow often do you currently use AI tools in any capacity (teaching, research, or personal use)?\n\nOptions: Never, Rarely, Monthly, Weekly, Daily",
+      "timestamp": "2025-12-05T13:02:02.669Z"
+    },
+    {
+      "role": "user",
+      "content": "I've never used AI outside of this survey",
+      "timestamp": "2025-12-05T13:13:23.932Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's helpful to know - you're starting fresh with AI tools.\n\nWhat is your primary reason for not having used AI tools yet?\n\nOptions: Not aware of available tools, Lack of training/knowledge, Privacy/security concerns, Don't see the value, Haven't had time to explore, Other reason",
+      "timestamp": "2025-12-05T13:13:27.871Z"
+    },
+    {
+      "role": "user",
+      "content": "No time, and not knowing where to start",
+      "timestamp": "2025-12-05T13:13:51.420Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes a lot of sense - those are really common barriers. It can feel overwhelming when there are so many tools out there.\n\nNow let's look at your potential interest in AI for teaching.\n\nHow interested are you in using AI tools to assist with creating course materials (like syllabi, assignments, or handouts)?\n\nPlease rate from 1-5, where 1 = Not at all interested and 5 = Very interested",
+      "timestamp": "2025-12-05T13:13:56.474Z"
+    },
+    {
+      "role": "user",
+      "content": "3",
+      "timestamp": "2025-12-05T13:14:15.382Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it - moderate interest in using AI for course materials.\n\nHow interested are you in using AI tools to help with grading or providing feedback to students?\n\nPlease rate from 1-5, where 1 = Not at all interested and 5 = Very interested",
+      "timestamp": "2025-12-05T13:14:17.937Z"
+    },
+    {
+      "role": "user",
+      "content": "3",
+      "timestamp": "2025-12-05T13:14:30.804Z"
+    },
+    {
+      "role": "assistant",
+      "content": "How interested are you in using AI tools to help with lesson planning or curriculum development?\n\nPlease rate from 1-5, where 1 = Not at all interested and 5 = Very interested",
+      "timestamp": "2025-12-05T13:14:33.361Z"
+    },
+    {
+      "role": "user",
+      "content": "3",
+      "timestamp": "2025-12-05T13:14:41.350Z"
+    },
+    {
+      "role": "assistant",
+      "content": "How interested are you in using AI tools for research activities (literature reviews, data analysis, writing assistance)?\n\nPlease rate from 1-5, where 1 = Not at all interested and 5 = Very interested",
+      "timestamp": "2025-12-05T13:14:44.338Z"
+    },
+    {
+      "role": "user",
+      "content": "2",
+      "timestamp": "2025-12-05T13:14:53.607Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks! Now let's look at potential concerns and barriers.\n\nHow concerned are you about student academic integrity if AI tools become more prevalent in education?\n\nPlease rate from 1-5, where 1 = Not at all concerned and 5 = Very concerned",
+      "timestamp": "2025-12-05T13:14:56.503Z"
+    },
+    {
+      "role": "user",
+      "content": "4",
+      "timestamp": "2025-12-05T13:15:12.916Z"
+    },
+    {
+      "role": "assistant",
+      "content": "You mentioned you're quite concerned about academic integrity with AI tools becoming more prevalent. What specific aspects of academic integrity worry you most?",
+      "timestamp": "2025-12-05T13:15:15.307Z"
+    },
+    {
+      "role": "user",
+      "content": "students using it to cheat",
+      "timestamp": "2025-12-05T13:15:31.228Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a very legitimate concern that many faculty share - the worry about students using AI to complete assignments dishonestly.\n\nHow confident do you feel in your ability to detect when students have used AI inappropriately in their work?\n\nPlease rate from 1-5, where 1 = Not at all confident and 5 = Very confident",
+      "timestamp": "2025-12-05T13:15:35.420Z"
+    },
+    {
+      "role": "user",
+      "content": "1",
+      "timestamp": "2025-12-05T13:15:48.351Z"
+    },
+    {
+      "role": "assistant",
+      "content": "How concerned are you about the privacy and security of student data when using AI tools?\n\nPlease rate from 1-5, where 1 = Not at all concerned and 5 = Very concerned",
+      "timestamp": "2025-12-05T13:15:50.831Z"
+    },
+    {
+      "role": "user",
+      "content": "4",
+      "timestamp": "2025-12-05T13:16:02.289Z"
+    },
+    {
+      "role": "assistant",
+      "content": "How concerned are you about the time it would take to learn new AI tools?\n\nPlease rate from 1-5, where 1 = Not at all concerned and 5 = Very concerned",
+      "timestamp": "2025-12-05T13:16:05.997Z"
+    },
+    {
+      "role": "user",
+      "content": "4",
+      "timestamp": "2025-12-05T13:16:19.620Z"
+    },
+    {
+      "role": "assistant",
+      "content": "How concerned are you about the accuracy or reliability of AI-generated content?\n\nPlease rate from 1-5, where 1 = Not at all concerned and 5 = Very concerned",
+      "timestamp": "2025-12-05T13:16:22.755Z"
+    },
+    {
+      "role": "user",
+      "content": "3",
+      "timestamp": "2025-12-05T13:16:35.018Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks! Now let's explore what kind of support would be most helpful for you.\n\nWhat type of training or support would be most valuable to help you get started with AI tools?\n\nOptions: One-on-one consultation, Group workshops, Online tutorials, Written guides/documentation, Hands-on practice sessions, Other",
+      "timestamp": "2025-12-05T13:16:38.337Z"
+    },
+    {
+      "role": "user",
+      "content": "Online tutorials would be great",
+      "timestamp": "2025-12-05T13:17:06.220Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great to know - online tutorials would work well for your schedule and let you learn at your own pace.\n\nHow much time would you realistically be willing to invest in learning about AI tools initially?\n\nOptions: Less than 1 hour, 1-3 hours, 4-6 hours, 7-10 hours, More than 10 hours",
+      "timestamp": "2025-12-05T13:17:10.362Z"
+    },
+    {
+      "role": "user",
+      "content": "a few hours a week is all I can manage",
+      "timestamp": "2025-12-05T13:18:17.295Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds very reasonable - a few hours a week would actually add up to good progress over time.\n\nWhat specific topics would you most want covered in AI training for faculty?\n\nOptions: Basic AI tool overview, Academic integrity policies, Privacy and data security, Practical classroom applications, Tool-specific training, Other",
+      "timestamp": "2025-12-05T13:18:21.169Z"
+    },
+    {
+      "role": "user",
+      "content": "I need to start with the basics",
+      "timestamp": "2025-12-05T13:18:37.057Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect - starting with the basics makes complete sense given you're new to AI tools.\n\nNow let's talk about NextEd services. NextEd is our campus support service that helps faculty integrate educational technology.\n\nAre you currently familiar with NextEd services at St. Cloud State?\n\nOptions: Very familiar, Somewhat familiar, Have heard of it, Not familiar at all",
+      "timestamp": "2025-12-05T13:18:40.766Z"
+    },
+    {
+      "role": "user",
+      "content": "I only heard of it the other day.",
+      "timestamp": "2025-12-05T13:19:08.414Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's totally fine - NextEd is still building awareness across campus.\n\nWould you be interested in NextEd providing AI-related support and training for faculty?\n\nOptions: Very interested, Somewhat interested, Neutral, Not very interested, Not at all interested",
+      "timestamp": "2025-12-05T13:19:11.418Z"
+    },
+    {
+      "role": "user",
+      "content": "Very interested",
+      "timestamp": "2025-12-05T13:19:27.912Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful to hear! It sounds like NextEd could be a great resource for you.\n\nWhat would be the most convenient way for you to access AI training and support from NextEd?\n\nOptions: In-person sessions, Online/virtual sessions, Self-paced online modules, Email support, Drop-in help sessions, Other",
+      "timestamp": "2025-12-05T13:19:31.216Z"
+    },
+    {
+      "role": "user",
+      "content": "Drop-in sessions would be really handy",
+      "timestamp": "2025-12-05T13:19:56.077Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a great suggestion - drop-in sessions would give you the flexibility to get help when you need it without having to commit to scheduled times.\n\nFinally, let's gather some background information to help us better understand our faculty needs.\n\nWhat is your primary department or college?",
+      "timestamp": "2025-12-05T13:19:59.716Z"
+    },
+    {
+      "role": "user",
+      "content": "I work in sociology",
+      "timestamp": "2025-12-05T13:20:25.119Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Great! Sociology brings such an interesting perspective to AI applications.\n\nHow many years have you been teaching at the university level?\n\nOptions: Less than 2 years, 2-5 years, 6-10 years, 11-20 years, More than 20 years",
+      "timestamp": "2025-12-05T13:20:28.031Z"
+    },
+    {
+      "role": "user",
+      "content": "more than 20 years",
+      "timestamp": "2025-12-05T13:20:39.159Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful - you bring a lot of teaching experience to this conversation.\n\nWhat is your current position?\n\nOptions: Lecturer, Assistant Professor, Associate Professor, Full Professor, Adjunct Faculty, Other",
+      "timestamp": "2025-12-05T13:20:42.192Z"
+    },
+    {
+      "role": "user",
+      "content": "I'm a full professor",
+      "timestamp": "2025-12-05T13:20:54.786Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! I think I have everything I need. Let me generate a summary of your responses...\n\n## Survey Response Summary\n\n**Respondent Profile:**\n- Full Professor, Sociology Department\n- 20+ years university teaching experience\n\n**Current AI Usage:**\n- Never used AI tools outside of this survey\n- Primary barriers: Lack of time and not knowing where to start\n\n**Interest Levels (1-5 scale):**\n- Course materials creation: 3 (moderate)\n- Grading/feedback assistance: 3 (moderate)  \n- Lesson planning/curriculum: 3 (moderate)\n- Research activities: 2 (low)\n\n**Concerns (1-5 scale):**\n- Academic integrity: 4 (high concern) - specifically worried about students using AI to cheat\n- Confidence detecting AI misuse: 1 (very low confidence)\n- Privacy/security of student data: 4 (high concern)\n- Time to learn new tools: 4 (high concern)\n- AI content accuracy: 3 (moderate concern)\n\n**Support Preferences:**\n- Training format: Online tutorials\n- Time commitment: A few hours per week\n- Content focus: Basic AI tool overview\n- Access method: Drop-in help sessions\n\n**NextEd Services:**\n- Awareness: Just heard of it recently\n- Interest in AI support: Very interested\n\nDoes this accurately capture your responses? Anything to add or clarify?",
+      "timestamp": "2025-12-05T13:21:02.338Z"
+    }
+  ],
+  "summary": {
+    "initial": "Perfect! I think I have everything I need. Let me generate a summary of your responses...\n\n## Survey Response Summary\n\n**Respondent Profile:**\n- Full Professor, Sociology Department\n- 20+ years university teaching experience\n\n**Current AI Usage:**\n- Never used AI tools outside of this survey\n- Primary barriers: Lack of time and not knowing where to start\n\n**Interest Levels (1-5 scale):**\n- Course materials creation: 3 (moderate)\n- Grading/feedback assistance: 3 (moderate)  \n- Lesson planning/curriculum: 3 (moderate)\n- Research activities: 2 (low)\n\n**Concerns (1-5 scale):**\n- Academic integrity: 4 (high concern) - specifically worried about students using AI to cheat\n- Confidence detecting AI misuse: 1 (very low confidence)\n- Privacy/security of student data: 4 (high concern)\n- Time to learn new tools: 4 (high concern)\n- AI content accuracy: 3 (moderate concern)\n\n**Support Preferences:**\n- Training format: Online tutorials\n- Time commitment: A few hours per week\n- Content focus: Basic AI tool overview\n- Access method: Drop-in help sessions\n\n**NextEd Services:**\n- Awareness: Just heard of it recently\n- Interest in AI support: Very interested\n\nDoes this accurately capture your responses? Anything to add or clarify?",
+    "confirmed": "Perfect! I think I have everything I need. Let me generate a summary of your responses...\n\n## Survey Response Summary\n\n**Respondent Profile:**\n- Full Professor, Sociology Department\n- 20+ years university teaching experience\n\n**Current AI Usage:**\n- Never used AI tools outside of this survey\n- Primary barriers: Lack of time and not knowing where to start\n\n**Interest Levels (1-5 scale):**\n- Course materials creation: 3 (moderate)\n- Grading/feedback assistance: 3 (moderate)  \n- Lesson planning/curriculum: 3 (moderate)\n- Research activities: 2 (low)\n\n**Concerns (1-5 scale):**\n- Academic integrity: 4 (high concern) - specifically worried about students using AI to cheat\n- Confidence detecting AI misuse: 1 (very low confidence)\n- Privacy/security of student data: 4 (high concern)\n- Time to learn new tools: 4 (high concern)\n- AI content accuracy: 3 (moderate concern)\n\n**Support Preferences:**\n- Training format: Online tutorials\n- Time commitment: A few hours per week\n- Content focus: Basic AI tool overview\n- Access method: Drop-in help sessions\n\n**NextEd Services:**\n- Awareness: Just heard of it recently\n- Interest in AI support: Very interested\n\nDoes this accurately capture your responses? Anything to add or clarify?",
+    "user_edits": null
+  },
+  "completed_time": "2025-12-05T13:21:10.869Z",
+  "last_updated": "2025-12-05T13:21:10.869Z"
+}

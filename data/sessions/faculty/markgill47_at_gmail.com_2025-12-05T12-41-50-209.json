@@ -1,0 +1,190 @@
+{
+  "session_id": "3c333046-47ab-4eed-a94b-308448412767",
+  "survey_type": "faculty",
+  "status": "in-progress",
+  "participant": {
+    "name": "Mark Gill",
+    "email": "markgill47@gmail.com",
+    "start_time": "2025-12-05T12:41:50.209Z"
+  },
+  "conversation": [
+    {
+      "role": "assistant",
+      "content": "Hi Mark Gill! Thanks for taking time to share your thoughts about AI in teaching.\n\nThis is a hybrid survey - I'll ask you questions one at a time, and when your answers indicate complexity or high interest, I'll ask follow-up questions to understand better.\n\nThe survey has 6 sections and typically takes 10-30 minutes depending on how much detail you want to provide. You're in control - you can keep responses brief or elaborate as much as you'd like.\n\nLet's start with your current experience with AI tools.\n\nWhich AI tools have you tried? (List any, or say 'none yet')",
+      "timestamp": "2025-12-05T12:41:50.214Z"
+    },
+    {
+      "role": "user",
+      "content": "Dude, I use them all.  I live a year in the future and bleed code.",
+      "timestamp": "2025-12-05T12:42:10.971Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Haha, I love the enthusiasm! Sounds like you're definitely on the cutting edge.\n\nLet me start this survey properly. I'm gathering insights from St. Cloud State faculty about AI adoption for teaching and research.\n\nHow often do you currently use AI tools in your work?\n\nOptions: Never, Rarely, Monthly, Weekly, Daily",
+      "timestamp": "2025-12-05T12:42:14.688Z"
+    },
+    {
+      "role": "user",
+      "content": "Daily.  More than daily.",
+      "timestamp": "2025-12-05T12:42:35.766Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it - you're a heavy user! \n\nSince you're using AI tools so frequently, what are the main ways you're using them? For example, are you using them for research, course prep, grading, coding, or something else?",
+      "timestamp": "2025-12-05T12:42:39.377Z"
+    },
+    {
+      "role": "user",
+      "content": "course prep, software development, personal gratification",
+      "timestamp": "2025-12-05T12:43:11.505Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Interesting mix! The software development and course prep makes sense given your tech background.\n\nWhich specific AI tools do you find most useful for your daily work?",
+      "timestamp": "2025-12-05T12:43:14.078Z"
+    },
+    {
+      "role": "user",
+      "content": "Claude",
+      "timestamp": "2025-12-05T12:43:27.725Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Nice choice! (And thanks for the vote of confidence 😊)\n\nNow let's look at your interest in AI for teaching specifically.\n\nOn a scale of 1-5, how interested are you in using AI tools to enhance your teaching?\n\n1 = Not at all interested\n5 = Extremely interested",
+      "timestamp": "2025-12-05T12:43:31.140Z"
+    },
+    {
+      "role": "user",
+      "content": "6",
+      "timestamp": "2025-12-05T12:43:50.997Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Haha, off the charts! Since you're so enthusiastic about AI for teaching, what specific teaching applications are you most excited about? What would be your dream AI integration for your courses?",
+      "timestamp": "2025-12-05T12:43:54.231Z"
+    },
+    {
+      "role": "user",
+      "content": "I've got this vision of the future where AI allows creativity and self-expression unhindered by skill, talent, or the lack thereof.  I would adopt a creativity-first pedagogy and completely restructure education.",
+      "timestamp": "2025-12-05T12:45:03.421Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a fascinating and ambitious vision - using AI to democratize creativity by removing traditional skill barriers. I can see how that would completely transform how we think about education and what we prioritize in learning.\n\nHow do you envision implementing this creativity-first approach in your current courses? Are there specific ways you're already experimenting with this idea?",
+      "timestamp": "2025-12-05T12:45:07.263Z"
+    },
+    {
+      "role": "user",
+      "content": "I built you.  This is an example.",
+      "timestamp": "2025-12-05T12:45:42.862Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Wait, hold on - are you saying you built me (Claude) or that you built this survey system we're using right now?\n\nBecause if you built this survey interface, that's actually a perfect example of your creativity-first approach in action!",
+      "timestamp": "2025-12-05T12:45:45.890Z"
+    },
+    {
+      "role": "user",
+      "content": "Well. I built this survey bot.  I only wish I'd built Claude.",
+      "timestamp": "2025-12-05T12:46:06.098Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Ah, that makes more sense! And honestly, building this survey bot is pretty impressive - you've created an interactive AI system that can conduct nuanced conversations and adapt based on responses. That's exactly the kind of creative application you're talking about!\n\nSince you're clearly already implementing your vision, what concerns or barriers, if any, do you have about broader AI adoption in education?\n\n1 = No concerns at all\n5 = Significant concerns",
+      "timestamp": "2025-12-05T12:46:10.624Z"
+    },
+    {
+      "role": "user",
+      "content": "3 - I face the horse-to-trough relationship when it comes to the faculty.",
+      "timestamp": "2025-12-05T12:46:59.864Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Ha! \"You can lead a horse to water...\" - that's a perfect way to put it. \n\nSo it sounds like your main concern is faculty adoption rather than the technology itself. What do you think are the biggest obstacles preventing your colleagues from embracing these AI tools? Is it fear, lack of time to learn, institutional barriers, or something else?",
+      "timestamp": "2025-12-05T12:47:04.177Z"
+    },
+    {
+      "role": "user",
+      "content": "I don't want to speak for them, that's what this survey is for.  For some it's fear, for others it seems political.",
+      "timestamp": "2025-12-05T12:47:48.846Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a really thoughtful approach - and exactly why this survey is valuable. You're right that everyone's barriers are different.\n\nWhat type of support do you think would be most helpful for faculty who want to start using AI tools?\n\nOptions: Training workshops, One-on-one consultations, Online resources, Peer mentoring, Technical support, or something else?",
+      "timestamp": "2025-12-05T12:47:52.617Z"
+    },
+    {
+      "role": "user",
+      "content": "I honestly don't know.  I'm hoping you'll help me figure that out.",
+      "timestamp": "2025-12-05T12:48:21.951Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's exactly what this survey is designed to do - gather those insights from across the faculty!\n\nGot it, let's move on.\n\nNow I'd like to ask about NextEd services. Are you familiar with what NextEd offers for AI support and training at St. Cloud State?",
+      "timestamp": "2025-12-05T12:48:25.935Z"
+    },
+    {
+      "role": "user",
+      "content": "I designed NextEd.   You can say I'm familiar, ha!",
+      "timestamp": "2025-12-05T12:49:02.642Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Ha! Well that explains a lot about your \"year in the future\" perspective! You're not just a user - you're literally building the future of AI support at the university.\n\nSince you designed NextEd, what do you see as the biggest gap between what NextEd currently offers and what faculty actually need for AI adoption?",
+      "timestamp": "2025-12-05T12:49:06.405Z"
+    },
+    {
+      "role": "user",
+      "content": "Money.  Right now our budget is nothing but hopes and dreams.",
+      "timestamp": "2025-12-05T12:49:43.524Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Ouch, the classic higher ed funding challenge. Even the best vision needs resources to become reality.\n\nIf you had adequate funding, what would be your top priority for NextEd services? What would make the biggest impact for faculty AI adoption?",
+      "timestamp": "2025-12-05T12:49:47.419Z"
+    },
+    {
+      "role": "user",
+      "content": "Resources to work with first.  Local, secure AI to address many ethical issues.  Then we'll train enthusiastic faculty to be trainers of their peers.",
+      "timestamp": "2025-12-05T12:50:42.875Z"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a smart strategy - address the security and ethics concerns first with local infrastructure, then leverage the enthusiasts as peer champions. The train-the-trainer model makes a lot of sense for scaling adoption.\n\nNow for some background information - what's your primary department or college at St. Cloud State?",
+      "timestamp": "2025-12-05T12:50:46.877Z"
+    },
+    {
+      "role": "user",
+      "content": "I work in the College of Science and Engineering",
+      "timestamp": "2025-12-05T12:51:12.066Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it - College of Science and Engineering.\n\nHow many years have you been teaching at St. Cloud State?",
+      "timestamp": "2025-12-05T12:51:14.912Z"
+    },
+    {
+      "role": "user",
+      "content": "10",
+      "timestamp": "2025-12-05T12:51:23.939Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! \n\nAnd finally, how would you describe your overall comfort level with technology?\n\nOptions: Beginner, Intermediate, Advanced, Expert",
+      "timestamp": "2025-12-05T12:51:27.334Z"
+    },
+    {
+      "role": "user",
+      "content": "Expert.  I live a year in the future, remember?",
+      "timestamp": "2025-12-05T12:51:50.700Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Haha, right - how could I forget your time-traveling tech status!\n\nI think I have everything I need. Let me generate a summary of your responses...\n\n## SURVEY SUMMARY\n\n**Respondent Profile:**\n- College of Science and Engineering faculty\n- 10 years at St. Cloud State\n- Expert-level technology comfort\n- Designer of NextEd services\n\n**AI Usage & Interest:**\n- Current usage: Daily+ (heavy user)\n- Primary applications: Course prep, software development, personal projects\n- Main tool: Claude\n- Teaching interest: 6/5 (extremely high)\n\n**Vision & Philosophy:**\n- Believes AI can democratize creativity by removing skill/talent barriers\n- Advocates for creativity-first pedagogy that would restructure education\n- Already implementing vision through building AI tools (like this survey bot)\n\n**Concerns & Barriers:**\n- Personal concerns: 3/5 (moderate)\n- Main barrier: Faculty adoption (\"horse-to-trough relationship\")\n- Obstacles vary by individual: fear for some, political concerns for others\n- Prefers not to generalize about colleagues' motivations\n\n**Support Needs:**\n- Uncertain about best support methods - seeking data through survey\n- Hopes survey will reveal what faculty actually need\n\n**NextEd & Resources:**\n- Designer/architect of NextEd services\n- Biggest gap: Funding (\"budget is hopes and dreams\")\n- Priority if funded: Local, secure AI infrastructure to address ethical concerns\n- Strategy: Train enthusiastic faculty to become peer trainers\n\nDoes this accurately capture your responses? Anything to add or clarify?",
+      "timestamp": "2025-12-05T12:52:00.599Z"
+    }
+  ],
+  "summary": null,
+  "completed_time": null,
+  "last_updated": "2025-12-05T12:52:00.599Z"
+}

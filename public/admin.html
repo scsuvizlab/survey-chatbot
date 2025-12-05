@@ -15,6 +15,48 @@
             background-color: #f5f5f5;
             padding: 20px;
         }
+        
+        /* Login Form */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .login-container h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .login-container p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        /* Main Container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -23,10 +65,48 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        h1 {
-            color: #2c3e50;
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
         }
+        h1 {
+            color: #2c3e50;
+        }
+        .logout-btn {
+            padding: 8px 16px;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background-color: #7f8c8d;
+        }
+        
+        /* Survey Selector */
+        .survey-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .survey-selector label {
+            margin-right: 10px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .survey-selector select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
         .main-actions {
             display: flex;
             gap: 15px;
@@ -90,6 +170,22 @@
         .stat-number {
             font-weight: 600;
             color: #27ae60;
+        }
+        .survey-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .survey-badge.workshop {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        .survey-badge.faculty {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
         }
         
         /* Analysis Results */
@@ -253,30 +349,61 @@
             border-radius: 4px;
             margin-bottom: 20px;
         }
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📊 Session Data Admin</h1>
+    <!-- Login Form -->
+    <div id="login-container" class="login-container">
+        <h1>🔒 Admin Login</h1>
+        <p>Enter the admin password to access session data</p>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required autofocus>
+            </div>
+            <button type="submit" class="btn-success" style="width: 100%;">Login</button>
+        </form>
+        <div id="login-error" class="error hidden" style="margin-top: 15px;"></div>
+    </div>
+
+    <!-- Main Admin Interface -->
+    <div id="admin-container" class="container hidden">
+        <div class="header">
+            <h1>📊 Session Data Admin</h1>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+        
+        <!-- Survey Selector -->
+        <div class="survey-selector">
+            <label for="survey-type">Survey Type:</label>
+            <select id="survey-type" onchange="changeSurveyType()">
+                <option value="all">All Surveys</option>
+                <option value="workshop">Workshop Feedback</option>
+                <option value="faculty">Faculty AI Survey</option>
+            </select>
+        </div>
         
         <div class="main-actions">
             <button class="btn-success" onclick="runAnalysis()">🔍 Run Analysis</button>
             <button class="btn-secondary" onclick="openJsonModal()">📁 Manage JSON Files</button>
         </div>
 
-        <div id="error" class="error" style="display: none;"></div>
-        <div id="success" class="success" style="display: none;"></div>
+        <div id="error" class="error hidden"></div>
+        <div id="success" class="success hidden"></div>
         
         <!-- Stats Section -->
         <div id="stats-section" class="stats-section">
-            <h2>Session Statistics</h2>
+            <h2>Session Statistics <span id="survey-badge" class="survey-badge"></span></h2>
             <div class="stat-item">Total Sessions: <span id="total-count" class="stat-number">0</span></div>
             <div class="stat-item">Completed: <span id="completed-count" class="stat-number">0</span></div>
             <div class="stat-item">In Progress: <span id="in-progress-count" class="stat-number">0</span></div>
         </div>
         
-        <!-- Analysis Results Section (hidden by default) -->
-        <div id="analysis-section" class="analysis-section" style="display: none;">
+        <!-- Analysis Results Section -->
+        <div id="analysis-section" class="analysis-section hidden">
             <h2>Analysis Results</h2>
             <div id="analysis-content" class="analysis-content"></div>
             <div class="analysis-actions">
@@ -298,11 +425,12 @@
                     <button class="btn-danger" onclick="deleteAll()">🗑️ Delete All Sessions</button>
                 </div>
                 
-                <div id="modal-message" style="margin-bottom: 15px;"></div>
+                <div id="modal-message"></div>
                 
                 <table>
                     <thead>
                         <tr>
+                            <th>Survey</th>
                             <th>Participant</th>
                             <th>Status</th>
                             <th>Date</th>
@@ -319,16 +447,99 @@
         const API_BASE = '/api/admin';
         let sessionsData = [];
         let analysisResult = '';
+        let adminPassword = '';
+        let currentSurveyType = 'all';
 
-        // Load on page load
-        document.addEventListener('DOMContentLoaded', loadSessions);
+        // Check for stored password on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedPassword = sessionStorage.getItem('adminPassword');
+            if (storedPassword) {
+                adminPassword = storedPassword;
+                showAdminInterface();
+                loadSessions();
+            }
+        });
+
+        // Login
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('login-error');
+            
+            try {
+                // Test password by trying to list sessions
+                const response = await fetch(`${API_BASE}/sessions`, {
+                    headers: {
+                        'Authorization': `Bearer ${password}`
+                    }
+                });
+                
+                if (response.ok) {
+                    adminPassword = password;
+                    sessionStorage.setItem('adminPassword', password);
+                    errorDiv.classList.add('hidden');
+                    showAdminInterface();
+                    loadSessions();
+                } else {
+                    errorDiv.textContent = 'Invalid password';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection error';
+                errorDiv.classList.remove('hidden');
+            }
+        });
+
+        function showAdminInterface() {
+            document.getElementById('login-container').classList.add('hidden');
+            document.getElementById('admin-container').classList.remove('hidden');
+        }
+
+        function logout() {
+            sessionStorage.removeItem('adminPassword');
+            adminPassword = '';
+            document.getElementById('login-container').classList.remove('hidden');
+            document.getElementById('admin-container').classList.add('hidden');
+            document.getElementById('password').value = '';
+        }
+
+        function changeSurveyType() {
+            currentSurveyType = document.getElementById('survey-type').value;
+            updateSurveyBadge();
+            loadSessions();
+        }
+
+        function updateSurveyBadge() {
+            const badge = document.getElementById('survey-badge');
+            if (currentSurveyType === 'all') {
+                badge.textContent = 'All Surveys';
+                badge.className = 'survey-badge';
+            } else if (currentSurveyType === 'workshop') {
+                badge.textContent = 'Workshop Only';
+                badge.className = 'survey-badge workshop';
+            } else {
+                badge.textContent = 'Faculty Only';
+                badge.className = 'survey-badge faculty';
+            }
+        }
 
         async function loadSessions() {
             const errorDiv = document.getElementById('error');
-            errorDiv.style.display = 'none';
+            errorDiv.classList.add('hidden');
             
             try {
-                const response = await fetch(`${API_BASE}/sessions`);
+                const url = `${API_BASE}/sessions?survey_type=${currentSurveyType}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${adminPassword}`
+                    }
+                });
+                
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
+                
                 const data = await response.json();
                 
                 if (!response.ok) {
@@ -341,7 +552,7 @@
             } catch (error) {
                 console.error('Error loading sessions:', error);
                 errorDiv.textContent = `Error: ${error.message}`;
-                errorDiv.style.display = 'block';
+                errorDiv.classList.remove('hidden');
             }
         }
 
@@ -355,7 +566,6 @@
             document.getElementById('in-progress-count').textContent = inProgress;
         }
 
-        // JSON Management Modal
         function openJsonModal() {
             const modal = document.getElementById('json-modal');
             const tbody = document.getElementById('json-sessions-body');
@@ -365,22 +575,24 @@
             messageDiv.innerHTML = '';
             
             if (sessionsData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: #666;">No sessions yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #666;">No sessions yet</td></tr>';
             } else {
                 sessionsData.forEach(session => {
                     const tr = document.createElement('tr');
                     const startDate = new Date(session.start_time).toLocaleDateString();
+                    const surveyBadge = `<span class="survey-badge ${session.survey_type}">${session.survey_type}</span>`;
                     
                     tr.innerHTML = `
+                        <td>${surveyBadge}</td>
                         <td>${session.participant.name}</td>
                         <td><span class="status ${session.status}">${session.status}</span></td>
                         <td>${startDate}</td>
                         <td>
                             <div class="action-btns">
-                                <button class="download-btn" onclick="downloadSession('${session.filename}')">
+                                <button class="download-btn" onclick="downloadSession('${session.survey_type}', '${session.filename}')">
                                     ⬇️ Download
                                 </button>
-                                <button class="delete-btn" onclick="deleteSession('${session.filename}', '${session.participant.name}')">
+                                <button class="delete-btn" onclick="deleteSession('${session.survey_type}', '${session.filename}', '${session.participant.name}')">
                                     🗑️ Delete
                                 </button>
                             </div>
@@ -394,13 +606,16 @@
         }
 
         function closeJsonModal() {
-            const modal = document.getElementById('json-modal');
-            modal.classList.remove('active');
+            document.getElementById('json-modal').classList.remove('active');
         }
 
-        async function downloadSession(filename) {
+        async function downloadSession(surveyType, filename) {
             try {
-                const response = await fetch(`${API_BASE}/sessions/${filename}`);
+                const response = await fetch(`${API_BASE}/sessions/${surveyType}/${filename}`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminPassword}`
+                    }
+                });
                 const blob = await response.blob();
                 
                 const url = window.URL.createObjectURL(blob);
@@ -419,13 +634,17 @@
 
         async function downloadAll() {
             try {
-                const response = await fetch(`${API_BASE}/sessions-all`);
+                const response = await fetch(`${API_BASE}/sessions-all/${currentSurveyType}`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminPassword}`
+                    }
+                });
                 const blob = await response.blob();
                 
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'all-sessions.json';
+                a.download = `all-sessions-${currentSurveyType}.json`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
@@ -436,14 +655,17 @@
             }
         }
 
-        async function deleteSession(filename, participantName) {
+        async function deleteSession(surveyType, filename, participantName) {
             if (!confirm(`Delete session for ${participantName}?\n\nThis cannot be undone.`)) {
                 return;
             }
             
             try {
-                const response = await fetch(`${API_BASE}/sessions/${filename}`, {
-                    method: 'DELETE'
+                const response = await fetch(`${API_BASE}/sessions/${surveyType}/${filename}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminPassword}`
+                    }
                 });
                 
                 const data = await response.json();
@@ -452,12 +674,10 @@
                     throw new Error(data.error || 'Failed to delete session');
                 }
                 
-                // Show success message
                 const messageDiv = document.getElementById('modal-message');
                 messageDiv.innerHTML = '<div class="success">Session deleted successfully</div>';
                 setTimeout(() => messageDiv.innerHTML = '', 3000);
                 
-                // Reload sessions and update modal
                 await loadSessions();
                 openJsonModal();
                 
@@ -468,18 +688,21 @@
         }
 
         async function deleteAll() {
-            if (!confirm(`Delete ALL ${sessionsData.length} sessions?\n\nThis will permanently delete all session data and CANNOT be undone.\n\nAre you absolutely sure?`)) {
+            const typeText = currentSurveyType === 'all' ? 'ALL' : currentSurveyType;
+            if (!confirm(`Delete ALL ${typeText} sessions (${sessionsData.length} total)?\n\nThis will permanently delete all session data and CANNOT be undone.\n\nAre you absolutely sure?`)) {
                 return;
             }
             
-            // Double confirmation for dangerous action
             if (!confirm('Final confirmation: Delete everything?')) {
                 return;
             }
             
             try {
-                const response = await fetch(`${API_BASE}/sessions-all`, {
-                    method: 'DELETE'
+                const response = await fetch(`${API_BASE}/sessions-all/${currentSurveyType}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminPassword}`
+                    }
                 });
                 
                 const data = await response.json();
@@ -488,11 +711,9 @@
                     throw new Error(data.error || 'Failed to delete sessions');
                 }
                 
-                // Show success message
                 const messageDiv = document.getElementById('modal-message');
                 messageDiv.innerHTML = `<div class="success">Deleted ${data.deleted_count} sessions successfully</div>`;
                 
-                // Reload sessions and update modal
                 await loadSessions();
                 openJsonModal();
                 
@@ -502,20 +723,26 @@
             }
         }
 
-        // Analysis Functions
         async function runAnalysis() {
+            if (currentSurveyType === 'all') {
+                alert('Please select a specific survey type to analyze (Workshop or Faculty)');
+                return;
+            }
+            
             const analysisSection = document.getElementById('analysis-section');
             const analysisContent = document.getElementById('analysis-content');
             const errorDiv = document.getElementById('error');
             
-            // Show loading
-            analysisSection.style.display = 'block';
+            analysisSection.classList.remove('hidden');
             analysisContent.innerHTML = '<div class="spinner"></div><p style="text-align: center;">Analyzing sessions... This may take 30-60 seconds.</p>';
-            errorDiv.style.display = 'none';
+            errorDiv.classList.add('hidden');
             
             try {
-                const response = await fetch(`${API_BASE}/analyze`, {
-                    method: 'POST'
+                const response = await fetch(`${API_BASE}/analyze/${currentSurveyType}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminPassword}`
+                    }
                 });
                 
                 const data = await response.json();
@@ -530,8 +757,8 @@
             } catch (error) {
                 console.error('Error running analysis:', error);
                 errorDiv.textContent = `Analysis Error: ${error.message}`;
-                errorDiv.style.display = 'block';
-                analysisSection.style.display = 'none';
+                errorDiv.classList.remove('hidden');
+                analysisSection.classList.add('hidden');
             }
         }
 
@@ -550,7 +777,7 @@
             const a = document.createElement('a');
             a.href = url;
             const timestamp = new Date().toISOString().split('T')[0];
-            a.download = `nexted-analysis-${timestamp}.txt`;
+            a.download = `nexted-analysis-${currentSurveyType}-${timestamp}.txt`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);

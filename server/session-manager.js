@@ -1,87 +1,83 @@
 const fs = require('fs').promises;
 const path = require('path');
+const crypto = require('crypto');
 
-const SESSIONS_DIR = path.join(__dirname, '../data/sessions');
+const BASE_DATA_DIR = path.join(__dirname, '../data/sessions');
 
-// Ensure sessions directory exists
-async function ensureSessionsDir() {
-  try {
-    await fs.access(SESSIONS_DIR);
-  } catch {
-    await fs.mkdir(SESSIONS_DIR, { recursive: true });
-  }
-}
-
-// Sanitize email for filename
-function sanitizeEmail(email) {
-  return email.replace('@', '_at_').replace(/[^a-zA-Z0-9._-]/g, '_');
-}
-
-// Generate filename
-function generateFilename(email) {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('.')[0];
-  const sanitized = sanitizeEmail(email);
-  return `${sanitized}_${timestamp}.json`;
-}
-
-// Create new session
-async function createSession(name, email) {
-  await ensureSessionsDir();
+// Create a new session file
+async function createSession(name, email, surveyType = 'workshop') {
+  const sessionId = crypto.randomUUID();
+  const timestamp = new Date().toISOString();
+  
+  // Sanitize email for filename
+  const sanitizedEmail = email
+    .replace('@', '_at_')
+    .replace(/[^a-zA-Z0-9_.-]/g, '_');
+  
+  // Create filename with survey type folder
+  const filenameTimestamp = timestamp.replace(/[:.]/g, '-').replace('Z', '');
+  const filename = `${sanitizedEmail}_${filenameTimestamp}.json`;
   
   const sessionData = {
-    session_id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    status: 'in_progress',
+    session_id: sessionId,
+    survey_type: surveyType,
+    status: 'in-progress',
     participant: {
       name,
       email,
-      start_time: new Date().toISOString()
+      start_time: timestamp
     },
     conversation: [],
-    last_updated: new Date().toISOString()
+    summary: null,
+    completed_time: null,
+    last_updated: timestamp
   };
   
-  const filename = generateFilename(email);
-  const filepath = path.join(SESSIONS_DIR, filename);
+  // Write to appropriate survey folder
+  const dirPath = path.join(BASE_DATA_DIR, surveyType);
+  const filepath = path.join(dirPath, filename);
   
-  await fs.writeFile(filepath, JSON.stringify(sessionData, null, 2));
+  // Ensure directory exists
+  await fs.mkdir(dirPath, { recursive: true });
+  
+  await fs.writeFile(filepath, JSON.stringify(sessionData, null, 2), 'utf8');
   
   return { filename, sessionData };
 }
 
 // Update session with new message
-async function updateSession(filename, role, content) {
-  const filepath = path.join(SESSIONS_DIR, filename);
+async function updateSession(filename, role, content, surveyType = 'workshop') {
+  const filepath = path.join(BASE_DATA_DIR, surveyType, filename);
   
-  const data = await fs.readFile(filepath, 'utf8');
-  const sessionData = JSON.parse(data);
+  const data = JSON.parse(await fs.readFile(filepath, 'utf8'));
   
-  sessionData.conversation.push({
-    role,
-    content,
+  data.conversation.push({
+    role: role,
+    content: content,
     timestamp: new Date().toISOString()
   });
   
-  sessionData.last_updated = new Date().toISOString();
+  data.last_updated = new Date().toISOString();
   
-  await fs.writeFile(filepath, JSON.stringify(sessionData, null, 2));
+  await fs.writeFile(filepath, JSON.stringify(data, null, 2), 'utf8');
   
-  return sessionData;
+  return data;
 }
 
-// Mark session as completed
-async function completeSession(filename, summary) {
-  const filepath = path.join(SESSIONS_DIR, filename);
+// Mark session as completed with summary
+async function completeSession(filename, summary, surveyType = 'workshop') {
+  const filepath = path.join(BASE_DATA_DIR, surveyType, filename);
   
-  const data = await fs.readFile(filepath, 'utf8');
-  const sessionData = JSON.parse(data);
+  const data = JSON.parse(await fs.readFile(filepath, 'utf8'));
   
-  sessionData.status = 'completed';
-  sessionData.summary = summary;
-  sessionData.completed_time = new Date().toISOString();
+  data.status = 'completed';
+  data.summary = summary;
+  data.completed_time = new Date().toISOString();
+  data.last_updated = new Date().toISOString();
   
-  await fs.writeFile(filepath, JSON.stringify(sessionData, null, 2));
+  await fs.writeFile(filepath, JSON.stringify(data, null, 2), 'utf8');
   
-  return sessionData;
+  return data;
 }
 
 module.exports = {
