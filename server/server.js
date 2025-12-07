@@ -715,6 +715,161 @@ app.post('/api/admin/course-report/:survey_type/:filename', async (req, res) => 
   }
 });
 
+// Save analysis report to file
+app.post('/api/admin/save-analysis', async (req, res) => {
+  try {
+    const { survey_type, analysis } = req.body;
+    
+    if (!survey_type || !analysis) {
+      return res.status(400).json({ error: 'Survey type and analysis required' });
+    }
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('Z', '');
+    const filename = `${survey_type}-analysis-${timestamp}.txt`;
+    const reportPath = path.join(__dirname, '../data/reports/analysis', filename);
+    
+    await fs.writeFile(reportPath, analysis, 'utf8');
+    
+    console.log(`Saved analysis report: ${filename}`);
+    res.json({ success: true, filename });
+    
+  } catch (error) {
+    console.error('Error saving analysis report:', error);
+    res.status(500).json({ error: 'Failed to save report: ' + error.message });
+  }
+});
+
+// Save course report to file
+app.post('/api/admin/save-course-report', async (req, res) => {
+  try {
+    const { survey_type, filename, participant_name, report } = req.body;
+    
+    if (!survey_type || !filename || !report) {
+      return res.status(400).json({ error: 'Survey type, filename, and report required' });
+    }
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('Z', '');
+    const sanitizedName = participant_name.replace(/[^a-zA-Z0-9]/g, '_');
+    const reportFilename = `course-${sanitizedName}-${timestamp}.txt`;
+    const reportPath = path.join(__dirname, '../data/reports/courses', reportFilename);
+    
+    await fs.writeFile(reportPath, report, 'utf8');
+    
+    console.log(`Saved course report: ${reportFilename}`);
+    res.json({ success: true, filename: reportFilename });
+    
+  } catch (error) {
+    console.error('Error saving course report:', error);
+    res.status(500).json({ error: 'Failed to save report: ' + error.message });
+  }
+});
+
+// List all saved reports
+app.get('/api/admin/reports', async (req, res) => {
+  try {
+    const reports = { analysis: [], courses: [] };
+    
+    // List analysis reports
+    try {
+      const analysisDir = path.join(__dirname, '../data/reports/analysis');
+      const analysisFiles = await fs.readdir(analysisDir);
+      
+      for (const file of analysisFiles) {
+        if (file.endsWith('.txt')) {
+          const stats = await fs.stat(path.join(analysisDir, file));
+          reports.analysis.push({
+            filename: file,
+            created: stats.mtime,
+            size: stats.size
+          });
+        }
+      }
+    } catch (error) {
+      console.log('No analysis reports yet');
+    }
+    
+    // List course reports
+    try {
+      const coursesDir = path.join(__dirname, '../data/reports/courses');
+      const courseFiles = await fs.readdir(coursesDir);
+      
+      for (const file of courseFiles) {
+        if (file.endsWith('.txt')) {
+          const stats = await fs.stat(path.join(coursesDir, file));
+          reports.courses.push({
+            filename: file,
+            created: stats.mtime,
+            size: stats.size
+          });
+        }
+      }
+    } catch (error) {
+      console.log('No course reports yet');
+    }
+    
+    // Sort by date, newest first
+    reports.analysis.sort((a, b) => b.created - a.created);
+    reports.courses.sort((a, b) => b.created - a.created);
+    
+    res.json(reports);
+    
+  } catch (error) {
+    console.error('Error listing reports:', error);
+    res.status(500).json({ error: 'Failed to list reports' });
+  }
+});
+
+// Download a saved report
+app.get('/api/admin/reports/:type/:filename', async (req, res) => {
+  try {
+    const { type, filename } = req.params;
+    
+    if (!['analysis', 'courses'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid report type' });
+    }
+    
+    if (filename.includes('..') || filename.includes('/')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
+    const reportPath = path.join(__dirname, `../data/reports/${type}`, filename);
+    const content = await fs.readFile(reportPath, 'utf8');
+    
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(content);
+    
+  } catch (error) {
+    console.error('Error downloading report:', error);
+    res.status(404).json({ error: 'Report not found' });
+  }
+});
+
+// Delete a saved report
+app.delete('/api/admin/reports/:type/:filename', async (req, res) => {
+  try {
+    const { type, filename } = req.params;
+    
+    if (!['analysis', 'courses'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid report type' });
+    }
+    
+    if (filename.includes('..') || filename.includes('/')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
+    const reportPath = path.join(__dirname, `../data/reports/${type}`, filename);
+    await fs.unlink(reportPath);
+    
+    console.log(`Deleted report: ${filename}`);
+    res.json({ success: true });
+    
+  } catch (error) {
+    console.error('Error deleting report:', error);
+    res.status(500).json({ error: 'Failed to delete report' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

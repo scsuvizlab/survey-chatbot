@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -392,8 +392,9 @@
         </div>
         
         <div class="main-actions">
-            <button class="btn-success" onclick="runAnalysis()">ðŸ” Run Analysis</button>
-            <button class="btn-secondary" onclick="openJsonModal()">ðŸ“ Manage JSON Files</button>
+            <button class="btn-success" onclick="runAnalysis()">Run Analysis</button>
+            <button class="btn-secondary" onclick="openJsonModal()">Manage JSON Files</button>
+            <button class="btn-secondary" onclick="openReportsModal()">Manage Reports</button>
         </div>
 
         <div id="error" class="error hidden"></div>
@@ -412,8 +413,8 @@
             <h2>Analysis Results</h2>
             <div id="analysis-content" class="analysis-content"></div>
             <div class="analysis-actions">
-                <button onclick="copyAnalysis()">ðŸ“‹ Copy to Clipboard</button>
-                <button onclick="downloadAnalysis()">â¬‡ï¸ Download Report</button>
+                <button onclick="copyAnalysis()">Copy to Clipboard</button>
+                <button onclick="downloadAnalysis()">Download Report</button>
             </div>
         </div>
 
@@ -436,8 +437,8 @@
                 </div>
                 
                 <div class="modal-actions">
-                    <button class="btn-success" onclick="downloadAll()">â¬‡ï¸ Download All</button>
-                    <button class="btn-danger" onclick="deleteAll()">ðŸ—‘ï¸ Delete All Sessions</button>
+                    <button class="btn-success" onclick="downloadAll()">Download All</button>
+                    <button class="btn-danger" onclick="deleteAll()">Delete All Sessions</button>
                 </div>
                 
                 <div id="modal-message"></div>
@@ -456,6 +457,44 @@
                 </table>
             </div>
         </div>
+        <!-- Reports Management Modal -->
+        <div id="reports-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Saved Reports</h2>
+                    <button class="close-modal" onclick="closeReportsModal()">×</button>
+                </div>
+                
+                <div id="reports-message"></div>
+                
+                <h3 style="margin-top: 20px;">Analysis Reports</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Filename</th>
+                            <th>Created</th>
+                            <th>Size</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analysis-reports-body"></tbody>
+                </table>
+                
+                <h3 style="margin-top: 30px;">Course Reports</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Filename</th>
+                            <th>Created</th>
+                            <th>Size</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="course-reports-body"></tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -778,6 +817,9 @@
                 analysisResult = data.analysis;
                 analysisContent.textContent = data.analysis;
                 
+                // Auto-save the report
+                saveAnalysisReport();
+                
             } catch (error) {
                 console.error('Error running analysis:', error);
                 errorDiv.textContent = `Analysis Error: ${error.message}`;
@@ -837,6 +879,9 @@
                 courseReportResult = data.report;
                 reportContent.textContent = data.report;
                 
+                // Auto-save the report
+                saveCourseReportFile(surveyType, filename, participantName, data.report);
+                
                 // Scroll to report
                 reportSection.scrollIntoView({ behavior: 'smooth' });
                 
@@ -872,6 +917,213 @@
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+        }
+
+        // Reports Management
+        async function openReportsModal() {
+            const modal = document.getElementById('reports-modal');
+            const analysisBody = document.getElementById('analysis-reports-body');
+            const courseBody = document.getElementById('course-reports-body');
+            const messageDiv = document.getElementById('reports-message');
+            
+            analysisBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Loading...</td></tr>';
+            courseBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Loading...</td></tr>';
+            messageDiv.innerHTML = '';
+            
+            modal.classList.add('active');
+            
+            try {
+                const response = await fetch(`${API_BASE}/reports`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminPassword}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                // Populate analysis reports
+                if (data.analysis.length === 0) {
+                    analysisBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #666;">No saved analysis reports</td></tr>';
+                } else {
+                    analysisBody.innerHTML = '';
+                    data.analysis.forEach(report => {
+                        const tr = document.createElement('tr');
+                        const date = new Date(report.created).toLocaleString();
+                        const size = (report.size / 1024).toFixed(1) + ' KB';
+                        
+                        tr.innerHTML = `
+                            <td>${report.filename}</td>
+                            <td>${date}</td>
+                            <td>${size}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="download-btn" onclick="downloadReport('analysis', '\${report.filename}')">
+                                        Download
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteReport('analysis', '\${report.filename}')">
+                                        Delete
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                        analysisBody.appendChild(tr);
+                    });
+                }
+                
+                // Populate course reports
+                if (data.courses.length === 0) {
+                    courseBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #666;">No saved course reports</td></tr>';
+                } else {
+                    courseBody.innerHTML = '';
+                    data.courses.forEach(report => {
+                        const tr = document.createElement('tr');
+                        const date = new Date(report.created).toLocaleString();
+                        const size = (report.size / 1024).toFixed(1) + ' KB';
+                        
+                        tr.innerHTML = `
+                            <td>${report.filename}</td>
+                            <td>${date}</td>
+                            <td>${size}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="download-btn" onclick="downloadReport('courses', '\${report.filename}')">
+                                        Download
+                                    </button>
+                                    <button class="delete-btn" onclick="deleteReport('courses', '\${report.filename}')">
+                                        Delete
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                        courseBody.appendChild(tr);
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                messageDiv.innerHTML = '<div class="error">Failed to load reports</div>';
+            }
+        }
+
+        function closeReportsModal() {
+            document.getElementById('reports-modal').classList.remove('active');
+        }
+
+        async function downloadReport(type, filename) {
+            try {
+                const response = await fetch(`${API_BASE}/reports/${type}/${filename}`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminPassword}`
+                    }
+                });
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('Error downloading report:', error);
+                alert('Failed to download report');
+            }
+        }
+
+        async function deleteReport(type, filename) {
+            if (!confirm(`Delete report: ${filename}?\n\nThis cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/reports/${type}/${filename}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminPassword}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to delete report');
+                }
+                
+                const messageDiv = document.getElementById('reports-message');
+                messageDiv.innerHTML = '<div class="success">Report deleted successfully</div>';
+                setTimeout(() => messageDiv.innerHTML = '', 3000);
+                
+                // Refresh the modal
+                openReportsModal();
+                
+            } catch (error) {
+                console.error('Error deleting report:', error);
+                alert('Failed to delete report: ' + error.message);
+            }
+        }
+
+        // Auto-save analysis when generated
+        async function saveAnalysisReport() {
+            if (!analysisResult || !currentSurveyType) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/save-analysis`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify({
+                        survey_type: currentSurveyType,
+                        analysis: analysisResult
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('Analysis report saved:', data.filename);
+                    const successDiv = document.getElementById('success');
+                    successDiv.textContent = `Report saved to data/reports/analysis/${data.filename}`;
+                    successDiv.classList.remove('hidden');
+                    setTimeout(() => successDiv.classList.add('hidden'), 5000);
+                }
+            } catch (error) {
+                console.error('Error saving analysis report:', error);
+            }
+        }
+
+        // Auto-save course report when generated
+        async function saveCourseReportFile(surveyType, filename, participantName, report) {
+            try {
+                const response = await fetch(`${API_BASE}/save-course-report`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify({
+                        survey_type: surveyType,
+                        filename: filename,
+                        participant_name: participantName,
+                        report: report
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('Course report saved:', data.filename);
+                    const successDiv = document.getElementById('success');
+                    successDiv.textContent = `Report saved to data/reports/courses/${data.filename}`;
+                    successDiv.classList.remove('hidden');
+                    setTimeout(() => successDiv.classList.add('hidden'), 5000);
+                }
+            } catch (error) {
+                console.error('Error saving course report:', error);
+            }
         }
     </script>
 </body>
