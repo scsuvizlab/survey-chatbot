@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Redesign Exploration</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Banner -->
+    <div class="banner">
+        <img src="nexted_logo1.png" alt="NextEd Logo">
+    </div>
+
+    <div class="container">
+        <h1>AI Course Redesign Exploration</h1>
+
+        <!-- Initial Form (visible by default) -->
+        <div id="initial-form" class="form-overlay">
+            <div class="form-content">
+                <h2>Welcome!</h2>
+                <p>This conversation explores possibilities for integrating AI into your teaching. We'll discuss your course, your concerns, and what you're hoping to achieve.</p>
+                <p><strong>Estimated time:</strong> 15-20 minutes</p>
+                <p><strong>Our approach:</strong> This isn't about convincing you to use AI - it's about understanding your situation and exploring what would need to be true for AI to be helpful rather than problematic.</p>
+                <form id="user-info-form">
+                    <div class="form-group">
+                        <label for="name">Name:</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Start Conversation</button>
+                </form>
+                <div class="help-link">
+                    <a href="#" onclick="showHelp(); return false;">ℹ️ How does this work?</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Interface (hidden initially) -->
+        <div id="chat-interface" class="hidden">
+            <!-- Controls area -->
+            <div class="controls-area">
+                <div class="controls-left">
+                    <button id="help-btn" class="btn-icon" title="Help">ℹ️ Help</button>
+                </div>
+                <div class="controls-center">
+                    <!-- No progress indicator for adoption survey -->
+                </div>
+                <div class="controls-right">
+                    <button id="end-conversation-btn" class="btn-end">✓ I'm Done</button>
+                </div>
+            </div>
+
+            <!-- Messages Display -->
+            <div id="messages" class="messages-container"></div>
+
+            <!-- Typing Indicator -->
+            <div id="typing-indicator" class="typing-indicator hidden">
+                <div class="bot-message">
+                    <span class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="mic-placeholder"></div>
+                
+                <textarea 
+                    id="user-input" 
+                    placeholder="Type your response here..."
+                    rows="2"
+                ></textarea>
+                
+                <button id="send-btn" class="btn-send">Send</button>
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>How This Conversation Works</h2>
+                <div class="help-content">
+                    <h3>About This Exploration</h3>
+                    <p>This is a conversational exploration tool that helps you think through the possibilities and challenges of integrating AI into your teaching. Unlike traditional surveys, it adapts to your responses and explores complexity rather than forcing simple answers.</p>
+                    
+                    <h3>What to Expect</h3>
+                    <ul>
+                        <li><strong>Duration:</strong> 15-20 minutes depending on how much you want to share</li>
+                        <li><strong>Approach:</strong> Natural conversation with questions that work in options (like "would you rather see X, Y, or something else?")</li>
+                        <li><strong>Your concerns matter:</strong> We'll explore pedagogical, ethical, and institutional concerns without judgment</li>
+                        <li><strong>No prescriptions:</strong> This isn't about telling you what to do - it's about understanding what you need</li>
+                    </ul>
+
+                    <h3>Topics We'll Cover</h3>
+                    <ul>
+                        <li>Your course and what you want students to remember forever</li>
+                        <li>What prompted you to explore AI</li>
+                        <li>Concerns (academic integrity, learning quality, institutional policy, etc.)</li>
+                        <li>Current assessment approaches and how they align with your values</li>
+                        <li>What would make AI adoption feel safe and worthwhile</li>
+                        <li>Support needs and next steps</li>
+                    </ul>
+
+                    <h3>You're In Control</h3>
+                    <ul>
+                        <li><strong>Answer however feels right:</strong> Brief, detailed, "it depends" - all valid</li>
+                        <li><strong>Express uncertainty:</strong> "I'm not sure" and "it's complicated" are honest answers</li>
+                        <li><strong>End anytime:</strong> Click "I'm Done" when you're ready</li>
+                        <li><strong>Midpoint check:</strong> We'll let you know when we're about halfway through</li>
+                    </ul>
+
+                    <h3>Your Data</h3>
+                    <ul>
+                        <li>Everything you share is saved for the NextEd team to review</li>
+                        <li>At the end, you'll see a summary to review and approve</li>
+                        <li>Cannot resume if you close the window</li>
+                        <li>No right or wrong answers - honest reflection is what matters</li>
+                    </ul>
+
+                    <h3>What This Isn't</h3>
+                    <ul>
+                        <li>Not a sales pitch for AI - skepticism is valid and welcome</li>
+                        <li>Not problem-solving - you won't get prescribed solutions</li>
+                        <li>Not rushed - take the time you need to think and respond</li>
+                    </ul>
+                </div>
+                <button class="btn-primary" onclick="hideHelp()">Got It</button>
+            </div>
+        </div>
+
+        <!-- Summary Modal -->
+        <div id="summary-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Conversation Summary</h2>
+                <p>Please review this summary of our conversation. You can approve it to complete the session, or modify it if you'd like to add or clarify anything.</p>
+                <div id="summary-text" class="summary-text"></div>
+                <div class="modal-buttons">
+                    <button id="modify-btn" class="btn-secondary">Modify</button>
+                    <button id="approve-btn" class="btn-primary">Approve</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="adoption-survey.js"></script>
+</body>
+</html>

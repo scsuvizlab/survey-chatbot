@@ -187,6 +187,10 @@
             background-color: #f3e5f5;
             color: #7b1fa2;
         }
+        .survey-badge.adoption {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
         
         /* Analysis Results */
         .analysis-section {
@@ -357,7 +361,7 @@
 <body>
     <!-- Login Form -->
     <div id="login-container" class="login-container">
-        <h1>🔒 Admin Login</h1>
+        <h1>ðŸ”’ Admin Login</h1>
         <p>Enter the admin password to access session data</p>
         <form id="login-form">
             <div class="form-group">
@@ -372,7 +376,7 @@
     <!-- Main Admin Interface -->
     <div id="admin-container" class="container hidden">
         <div class="header">
-            <h1>📊 Session Data Admin</h1>
+            <h1>ðŸ“Š Session Data Admin</h1>
             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
         
@@ -383,12 +387,13 @@
                 <option value="all">All Surveys</option>
                 <option value="workshop">Workshop Feedback</option>
                 <option value="faculty">Faculty AI Survey</option>
+                <option value="adoption">Course Redesign Exploration</option>
             </select>
         </div>
         
         <div class="main-actions">
-            <button class="btn-success" onclick="runAnalysis()">🔍 Run Analysis</button>
-            <button class="btn-secondary" onclick="openJsonModal()">📁 Manage JSON Files</button>
+            <button class="btn-success" onclick="runAnalysis()">ðŸ” Run Analysis</button>
+            <button class="btn-secondary" onclick="openJsonModal()">ðŸ“ Manage JSON Files</button>
         </div>
 
         <div id="error" class="error hidden"></div>
@@ -407,8 +412,18 @@
             <h2>Analysis Results</h2>
             <div id="analysis-content" class="analysis-content"></div>
             <div class="analysis-actions">
-                <button onclick="copyAnalysis()">📋 Copy to Clipboard</button>
-                <button onclick="downloadAnalysis()">⬇️ Download Report</button>
+                <button onclick="copyAnalysis()">ðŸ“‹ Copy to Clipboard</button>
+                <button onclick="downloadAnalysis()">â¬‡ï¸ Download Report</button>
+            </div>
+        </div>
+
+        <!-- Course Report Section -->
+        <div id="course-report-section" class="analysis-section hidden">
+            <h2>Course Report</h2>
+            <div id="course-report-content" class="analysis-content"></div>
+            <div class="analysis-actions">
+                <button onclick="copyCourseReport()">Copy to Clipboard</button>
+                <button onclick="downloadCourseReport()">Download Report</button>
             </div>
         </div>
 
@@ -417,12 +432,12 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h2>JSON File Management</h2>
-                    <button class="close-modal" onclick="closeJsonModal()">×</button>
+                    <button class="close-modal" onclick="closeJsonModal()">Ã—</button>
                 </div>
                 
                 <div class="modal-actions">
-                    <button class="btn-success" onclick="downloadAll()">⬇️ Download All</button>
-                    <button class="btn-danger" onclick="deleteAll()">🗑️ Delete All Sessions</button>
+                    <button class="btn-success" onclick="downloadAll()">â¬‡ï¸ Download All</button>
+                    <button class="btn-danger" onclick="deleteAll()">ðŸ—‘ï¸ Delete All Sessions</button>
                 </div>
                 
                 <div id="modal-message"></div>
@@ -517,9 +532,12 @@
             } else if (currentSurveyType === 'workshop') {
                 badge.textContent = 'Workshop Only';
                 badge.className = 'survey-badge workshop';
-            } else {
+            } else if (currentSurveyType === 'faculty') {
                 badge.textContent = 'Faculty Only';
                 badge.className = 'survey-badge faculty';
+            } else if (currentSurveyType === 'adoption') {
+                badge.textContent = 'Adoption Only';
+                badge.className = 'survey-badge adoption';
             }
         }
 
@@ -582,6 +600,11 @@
                     const startDate = new Date(session.start_time).toLocaleDateString();
                     const surveyBadge = `<span class="survey-badge ${session.survey_type}">${session.survey_type}</span>`;
                     
+                    // Add course report button for completed adoption sessions
+                    const courseReportBtn = (session.survey_type === 'adoption' && session.status === 'completed') 
+                        ? `<button class="btn-success" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;" onclick="generateCourseReport('${session.survey_type}', '${session.filename}', '${session.participant.name}')">Course Report</button>`
+                        : '';
+                    
                     tr.innerHTML = `
                         <td>${surveyBadge}</td>
                         <td>${session.participant.name}</td>
@@ -589,11 +612,12 @@
                         <td>${startDate}</td>
                         <td>
                             <div class="action-btns">
+                                ${courseReportBtn}
                                 <button class="download-btn" onclick="downloadSession('${session.survey_type}', '${session.filename}')">
-                                    ⬇️ Download
+                                    â¬‡ï¸ Download
                                 </button>
                                 <button class="delete-btn" onclick="deleteSession('${session.survey_type}', '${session.filename}', '${session.participant.name}')">
-                                    🗑️ Delete
+                                    ðŸ—‘ï¸ Delete
                                 </button>
                             </div>
                         </td>
@@ -778,6 +802,72 @@
             a.href = url;
             const timestamp = new Date().toISOString().split('T')[0];
             a.download = `nexted-analysis-${currentSurveyType}-${timestamp}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        // Course Report functionality
+        let courseReportResult = '';
+
+        async function generateCourseReport(surveyType, filename, participantName) {
+            const reportSection = document.getElementById('course-report-section');
+            const reportContent = document.getElementById('course-report-content');
+            const errorDiv = document.getElementById('error');
+            
+            reportSection.classList.remove('hidden');
+            reportContent.innerHTML = '<div class="spinner"></div><p style="text-align: center;">Generating course report for ' + participantName + '... This may take 30-60 seconds.</p>';
+            errorDiv.classList.add('hidden');
+            
+            try {
+                const response = await fetch(`${API_BASE}/course-report/${surveyType}/${filename}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminPassword}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Report generation failed');
+                }
+                
+                courseReportResult = data.report;
+                reportContent.textContent = data.report;
+                
+                // Scroll to report
+                reportSection.scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                console.error('Error generating course report:', error);
+                errorDiv.textContent = `Report Error: ${error.message}`;
+                errorDiv.classList.remove('hidden');
+                reportSection.classList.add('hidden');
+            }
+        }
+
+        function copyCourseReport() {
+            navigator.clipboard.writeText(courseReportResult).then(() => {
+                alert('Course report copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        function downloadCourseReport() {
+            const blob = new Blob([courseReportResult], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const timestamp = new Date().toISOString().split('T')[0];
+            // Extract participant name from report if possible
+            const lines = courseReportResult.split('\n');
+            const courseLine = lines.find(l => l.includes('COURSE OVERVIEW'));
+            const filename = `course-report-${timestamp}.txt`;
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);

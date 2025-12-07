@@ -47,10 +47,10 @@ function getWorkshopGreeting(name) {
 
 I'm a conversational feedback tool - a prototype built on Claude (Anthropic's AI model) to gather richer insights than traditional surveys. A few things to know:
 
-• Our conversation will be saved for the NextEd team to review
-• This should take 5-10 minutes, but you can elaborate as much as you'd like
-• Any length answer works - detailed responses, brief thoughts, "I don't know," or "I'd rather not say" are all perfectly valid
-• I can't resume conversations yet, so if you close this window you'd need to start over (but anything shared will be saved)
+â€¢ Our conversation will be saved for the NextEd team to review
+â€¢ This should take 5-10 minutes, but you can elaborate as much as you'd like
+â€¢ Any length answer works - detailed responses, brief thoughts, "I don't know," or "I'd rather not say" are all perfectly valid
+â€¢ I can't resume conversations yet, so if you close this window you'd need to start over (but anything shared will be saved)
 
 I'm curious to start with your overall impressions - how did today's workshop land for you? What stood out most?`;
 }
@@ -195,7 +195,7 @@ const facultySections = [
     id: "nexted_interest",
     title: "NextEd Services",
     type: "structured_then_explore",
-    context: "NextEd is a new initiative launching at SCSU to support AI adoption. It offers three services:\n\n• DGX Spark Workstations: Small, powerful AI workstations for working with sensitive data locally (alternative to cloud tools like CoPilot)\n• AI Policy & Advisory Board: Help develop safe, ethical AI use guidelines\n• Adoption Clinic: Intensive support for redesigning one of your courses with AI",
+    context: "NextEd is a new initiative launching at SCSU to support AI adoption. It offers three services:\n\nâ€¢ DGX Spark Workstations: Small, powerful AI workstations for working with sensitive data locally (alternative to cloud tools like CoPilot)\nâ€¢ AI Policy & Advisory Board: Help develop safe, ethical AI use guidelines\nâ€¢ Adoption Clinic: Intensive support for redesigning one of your courses with AI",
     presentation: "Please rate your interest in each service (1-5):",
     questions: [
       {
@@ -266,6 +266,34 @@ Let's start with your current experience with AI tools.
 Which AI tools have you tried? (List any, or say 'none yet')`;
 }
 
+// ============================================
+// ADOPTION SURVEY (Course Redesign Exploration)
+// ============================================
+
+const adoptionSurveyInfo = {
+  title: "AI Course Redesign Exploration",
+  description: "Exploring possibilities for integrating AI into your teaching",
+  estimated_duration: "15-20 minutes",
+  remove_timer: true,
+  remove_progress: true
+};
+
+function getAdoptionGreeting(name) {
+  return `Hi ${name}! Thanks for taking time to explore possibilities for integrating AI into your teaching.
+
+I'm here to have a genuine conversation about your course, your concerns, and what you're hoping to achieve. This isn't about convincing you to use AI - it's about understanding your situation and what would need to be true for AI to be helpful rather than problematic.
+
+A few things to know:
+
+• This conversation will take 15-20 minutes depending on how much you want to share
+• There are no right or wrong answers - complexity and uncertainty are welcome
+• I won't offer solutions or prescriptions - this is about listening and understanding
+• Everything you share will be saved for the NextEd team to review
+• You can end whenever you're ready using the "I'm Done" button
+
+Let's start with the basics: Which course are you thinking about redesigning?`;
+}
+
 module.exports = {
   // Workshop feedback
   workshopContext,
@@ -276,5 +304,9 @@ module.exports = {
   // Faculty survey
   facultySurveyInfo,
   facultySections,
-  getFacultyGreeting
+  getFacultyGreeting,
+  
+  // Adoption survey
+  adoptionSurveyInfo,
+  getAdoptionGreeting
 };
