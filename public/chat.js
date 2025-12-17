@@ -1,60 +1,18 @@
-// Use relative path - works both locally and on Render
-const API_BASE = '/api/workshop';
+// C3 Chat Interface Logic
+const API_BASE = '/api';
 
 let sessionId = null;
 let conversationEnded = false;
 let timerInterval = null;
 let startTime = null;
-let tenMinuteWarningShown = false;
-let currentTopicIndex = null; // Track which topic bot is currently asking about
-
-// Topic tracking - detect based on bot's question context (8 topics)
-const topics = [
-    { 
-        label: "Workshop Experience", 
-        covered: false, 
-        botKeywords: ["workshop", "experience", "impressions", "overall", "stood out", "land for you"]
-    },
-    { 
-        label: "Specific Content", 
-        covered: false, 
-        botKeywords: ["content", "sessions", "resonated", "specific", "part of", "demonstrations"]
-    },
-    { 
-        label: "Newton Song Demo", 
-        covered: false, 
-        botKeywords: ["song", "newton", "music", "demonstration", "suno", "creative"]
-    },
-    { 
-        label: "NextEd Interest", 
-        covered: false, 
-        botKeywords: ["nexted", "interested", "dgx", "workstation", "policy board", "adoption clinic", "spark"]
-    },
-    { 
-        label: "AI Concerns", 
-        covered: false, 
-        botKeywords: ["concerns", "reservations", "worried", "barriers", "obstacles", "challenges", "privacy", "security", "data", "support", "help", "environmental", "energy", "carbon"]
-    },
-    { 
-        label: "Technical Comfort", 
-        covered: false, 
-        botKeywords: ["comfort", "familiar", "technical", "ai tools", "experience with", "used", "tried"]
-    },
-    { 
-        label: "Course Ideas", 
-        covered: false, 
-        botKeywords: ["course", "redesign", "teaching", "class", "curriculum", "students", "assignment"]
-    },
-    { 
-        label: "Survey Experience", 
-        covered: false, 
-        botKeywords: ["survey", "conversational", "experience", "compared to", "multiple choice", "questionnaire", "this tool", "feedback"]
-    }
-];
+let isTyping = false; // Prevent user input during bot typing animation
 
 // DOM Elements
-const initialForm = document.getElementById('initial-form');
-const userInfoForm = document.getElementById('user-info-form');
+const loginTab = document.getElementById('login-tab');
+const signupTab = document.getElementById('signup-tab');
+const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
+const authContainer = document.getElementById('auth-form');
 const chatInterface = document.getElementById('chat-interface');
 const messagesContainer = document.getElementById('messages');
 const userInput = document.getElementById('user-input');
@@ -68,117 +26,188 @@ const helpBtn = document.getElementById('help-btn');
 const endConversationBtn = document.getElementById('end-conversation-btn');
 const timerDisplay = document.getElementById('timer');
 const helpModal = document.getElementById('help-modal');
-const progressBtn = document.getElementById('progress-btn');
-const progressText = document.getElementById('progress-text');
-const topicDropdown = document.getElementById('topic-dropdown');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    userInfoForm.addEventListener('submit', handleInitialSubmit);
+    // Tab switching handled by onclick in HTML
+    loginForm.addEventListener('submit', handleLogin);
+    signupForm.addEventListener('submit', handleSignup);
     sendBtn.addEventListener('click', handleSendMessage);
     userInput.addEventListener('keydown', handleKeyPress);
     modifyBtn.addEventListener('click', handleModify);
     approveBtn.addEventListener('click', handleApprove);
     helpBtn.addEventListener('click', showHelp);
     endConversationBtn.addEventListener('click', handleEndConversation);
-    progressBtn.addEventListener('click', toggleTopicDropdown);
-    
-    // Initialize topic dropdown
-    renderTopics();
-    
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!progressBtn.contains(e.target) && !topicDropdown.contains(e.target)) {
-            closeTopicDropdown();
-        }
-    });
 });
 
-// Topic Functions
-function renderTopics() {
-    const topicList = document.querySelector('.topic-list');
-    topicList.innerHTML = '';
-    
-    topics.forEach((topic, index) => {
-        const item = document.createElement('div');
-        item.className = `topic-item ${topic.covered ? 'covered' : ''}`;
-        item.innerHTML = `
-            <div class="topic-checkbox ${topic.covered ? 'covered' : ''}"></div>
-            <span class="topic-text">${topic.label}</span>
-        `;
-        topicList.appendChild(item);
-    });
+// Tab switching - make globally accessible for onclick handlers
+window.showSignupForm = function() {
+    signupTab.classList.add('active');
+    loginTab.classList.remove('active');
+    signupForm.classList.remove('hidden');
+    loginForm.classList.add('hidden');
+};
+
+window.showLoginForm = function() {
+    loginTab.classList.add('active');
+    signupTab.classList.remove('active');
+    loginForm.classList.remove('hidden');
+    signupForm.classList.add('hidden');
+};
+
+// Aliases for HTML onclick handlers
+window.showSignup = window.showSignupForm;
+window.showLogin = window.showLoginForm;
+
+function showLoginForm() {
+    window.showLoginForm();
 }
 
-function updateTopicProgress() {
-    const coveredCount = topics.filter(t => t.covered).length;
-    progressText.textContent = `${coveredCount}/8 topics`;
-    renderTopics();
+function showSignupForm() {
+    window.showSignupForm();
 }
 
-// Detect which topic the bot is asking about
-function detectBotTopic(botMessage) {
-    const lowerMessage = botMessage.toLowerCase();
+// Handle signup
+async function handleSignup(e) {
+    e.preventDefault();
     
-    for (let i = 0; i < topics.length; i++) {
-        if (topics[i].covered) continue; // Skip already covered topics
+    const name = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    
+    if (!name || !email || !password) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/signup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+        });
         
-        const hasKeyword = topics[i].botKeywords.some(keyword => 
-            lowerMessage.includes(keyword.toLowerCase())
-        );
+        const data = await response.json();
         
-        if (hasKeyword) {
-            currentTopicIndex = i;
-            return;
+        if (response.ok) {
+            sessionId = data.session_id;
+            
+            // Hide auth, show chat
+            authContainer.classList.add('hidden');
+            chatInterface.classList.remove('hidden');
+            
+            // Display bot's greeting with typing animation
+            addBotMessageWithTyping(data.message);
+            
+            // Start timer
+            startTimer();
+            
+            // Focus on input after animation completes
+            setTimeout(() => userInput.focus(), data.message.split(' ').length * 50);
+        } else {
+            alert('Signup error: ' + data.error);
         }
-    }
-    
-    // No specific topic detected
-    currentTopicIndex = null;
-}
-
-// Mark current topic as covered when user responds substantively
-function markCurrentTopicCovered(userMessage) {
-    // Must be substantive (>15 chars) and not a dismissive response
-    if (userMessage.length < 15) return;
-    
-    const lower = userMessage.toLowerCase();
-    const dismissive = ['i don\'t know', 'not sure', 'maybe', 'next question', 'move on', 'pass'];
-    const isDismissive = dismissive.some(phrase => lower.includes(phrase));
-    
-    if (isDismissive) {
-        // User declined to engage with this topic
-        currentTopicIndex = null;
-        return;
-    }
-    
-    // Mark the current topic as covered
-    if (currentTopicIndex !== null && !topics[currentTopicIndex].covered) {
-        topics[currentTopicIndex].covered = true;
-        updateTopicProgress();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to connect to server. Please try again.');
     }
 }
 
-function toggleTopicDropdown() {
-    const isHidden = topicDropdown.classList.contains('hidden');
+// Handle login
+async function handleLogin(e) {
+    e.preventDefault();
     
-    if (isHidden) {
-        topicDropdown.classList.remove('hidden');
-        progressBtn.classList.add('active');
-    } else {
-        closeTopicDropdown();
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    
+    if (!email || !password) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            sessionId = data.session_id;
+            
+            // Hide auth, show chat
+            authContainer.classList.add('hidden');
+            chatInterface.classList.remove('hidden');
+            
+            // Check if resuming existing conversation
+            if (data.conversation && data.conversation.length > 0) {
+                // Show resume notice in messages container
+                const resumeNotice = document.createElement('div');
+                resumeNotice.className = 'message bot-message';
+                resumeNotice.innerHTML = `
+                    <div class="message-bubble" style="background-color: #e3f2fd; padding: 20px;">
+                        <strong>Welcome back!</strong> You have an existing conversation from ${new Date(data.start_time).toLocaleDateString()}.<br><br>
+                        <button onclick="continueConversation()" class="btn-primary" style="margin-right: 10px;">Continue Conversation</button>
+                        <button onclick="viewHistory()" class="btn-secondary">View History First</button>
+                    </div>
+                `;
+                messagesContainer.appendChild(resumeNotice);
+                
+                // Store conversation for later
+                window.existingConversation = data.conversation;
+                window.startTime = new Date(data.start_time).getTime();
+            } else {
+                // New conversation - show greeting
+                addBotMessageWithTyping(data.message);
+                startTimer();
+                setTimeout(() => userInput.focus(), data.message.split(' ').length * 50);
+            }
+        } else {
+            alert('Login error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to connect to server. Please try again.');
     }
 }
 
-function closeTopicDropdown() {
-    topicDropdown.classList.add('hidden');
-    progressBtn.classList.remove('active');
-}
+// Resume conversation functions
+window.continueConversation = function() {
+    // Clear the resume notice
+    messagesContainer.innerHTML = '';
+    
+    // Display conversation history instantly (no animation for history)
+    window.existingConversation.forEach(msg => {
+        addMessage(msg.role, msg.content, false); // false = no animation
+    });
+    
+    // Start timer from original start time
+    startTimer(window.startTime);
+    
+    userInput.focus();
+};
+
+window.viewHistory = function() {
+    // Clear the resume notice
+    messagesContainer.innerHTML = '';
+    
+    // Display conversation history
+    window.existingConversation.forEach(msg => {
+        addMessage(msg.role, msg.content, false);
+    });
+    
+    // Add notice
+    const noticeDiv = document.createElement('div');
+    noticeDiv.className = 'message bot-message';
+    noticeDiv.innerHTML = '<div class="message-bubble" style="background-color: #e3f2fd; color: #1565c0; font-style: italic;">That\'s everything so far. Feel free to continue whenever you\'re ready.</div>';
+    messagesContainer.appendChild(noticeDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    // Start timer
+    startTimer(window.startTime);
+    
+    userInput.focus();
+};
 
 // Timer Functions
-function startTimer() {
-    startTime = Date.now();
-    tenMinuteWarningShown = false;
+function startTimer(existingStartTime = null) {
+    startTime = existingStartTime || Date.now();
     
     timerInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -186,12 +215,6 @@ function startTimer() {
         const seconds = elapsed % 60;
         
         timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        
-        // Check for 10-minute mark
-        if (minutes >= 10 && !tenMinuteWarningShown) {
-            tenMinuteWarningShown = true;
-            addMessage('bot', '⏰ Just a heads up - we\'ve been chatting for 10 minutes. Feel free to continue or click "I\'m Done" whenever you\'re ready to wrap up.');
-        }
     }, 1000);
 }
 
@@ -215,54 +238,9 @@ function hideHelp() {
 window.showHelp = showHelp;
 window.hideHelp = hideHelp;
 
-// Handle initial form submission
-async function handleInitialSubmit(e) {
-    e.preventDefault();
-    
-    const name = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    
-    if (!name || !email) return;
-    
-    try {
-        const response = await fetch(`${API_BASE}/start`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            sessionId = data.session_id;
-            
-            // Hide form, show chat
-            initialForm.classList.add('hidden');
-            chatInterface.classList.remove('hidden');
-            
-            // Display bot's greeting
-            addMessage('bot', data.message);
-            
-            // Detect initial topic from greeting
-            detectBotTopic(data.message);
-            
-            // Start timer
-            startTimer();
-            
-            // Focus on input
-            userInput.focus();
-        } else {
-            alert('Error starting session: ' + data.error);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to connect to server. Please try again.');
-    }
-}
-
 // Handle "I'm Done" button
 async function handleEndConversation() {
-    if (conversationEnded) return;
+    if (conversationEnded || isTyping) return;
     
     // Stop timer
     stopTimer();
@@ -270,7 +248,6 @@ async function handleEndConversation() {
     // Disable controls
     setInputEnabled(false);
     endConversationBtn.disabled = true;
-    closeTopicDropdown();
     
     // Show typing indicator
     showTypingIndicator();
@@ -305,16 +282,13 @@ async function handleEndConversation() {
 
 // Handle sending messages
 async function handleSendMessage() {
-    if (conversationEnded) return;
+    if (conversationEnded || isTyping) return;
     
     const message = userInput.value.trim();
     if (!message) return;
     
-    // Mark current topic as covered if user gave substantive response
-    markCurrentTopicCovered(message);
-    
-    // Display user message
-    addMessage('user', message);
+    // Display user message (instant, no animation)
+    addMessage('user', message, false);
     
     // Clear input
     userInput.value = '';
@@ -327,7 +301,11 @@ async function handleSendMessage() {
         const response = await fetch(`${API_BASE}/message`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: sessionId, message })
+            body: JSON.stringify({ 
+                session_id: sessionId, 
+                message,
+                start_time: startTime
+            })
         });
         
         const data = await response.json();
@@ -335,18 +313,15 @@ async function handleSendMessage() {
         hideTypingIndicator();
         
         if (response.ok) {
-            // Display bot response
-            addMessage('bot', data.message);
+            // Display bot response with typing animation
+            await addBotMessageWithTyping(data.message);
             
             // Check if this is a summary
             if (isSummaryMessage(data.message)) {
                 // Bot initiated summary - stop timer and show modal
                 stopTimer();
-                closeTopicDropdown();
                 setTimeout(() => showSummaryModal(data.message), 1000);
             } else {
-                // Detect which topic bot is asking about now
-                detectBotTopic(data.message);
                 setInputEnabled(true);
             }
         } else {
@@ -361,14 +336,14 @@ async function handleSendMessage() {
     }
 }
 
-// Handle Enter key (newline only, no send)
+// Handle Enter key
 function handleKeyPress(e) {
     // Allow normal enter for newlines
     // Users must click Send button
 }
 
-// Add message to chat
-function addMessage(role, content) {
+// Add message to chat with optional typing animation
+function addMessage(role, content, animate = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}-message`;
     
@@ -383,26 +358,78 @@ function addMessage(role, content) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// Check if message is a summary - more robust detection
-function isSummaryMessage(message) {
-    const summaryIndicators = [
-        'PARTICIPANT SUMMARY',
-        'participant summary',
-        'Workshop Feedback:',
-        'NextEd Interest:',
-        'Key Concerns',
-        'Does this accurately capture your thoughts',
-        'Does this capture your thoughts',
-        'Review this summary',
-        'here\'s a summary',
-        'let me summarize',
-        'Summary of',
-        'Recommended Follow-up:'
-    ];
+// Add bot message with typing animation
+async function addBotMessageWithTyping(content) {
+    isTyping = true;
+    setInputEnabled(false);
     
-    return summaryIndicators.some(indicator => 
-        message.includes(indicator)
-    );
+    // Create message container
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message bot-message';
+    
+    const bubbleDiv = document.createElement('div');
+    bubbleDiv.className = 'message-bubble';
+    bubbleDiv.textContent = ''; // Start empty
+    
+    messageDiv.appendChild(bubbleDiv);
+    messagesContainer.appendChild(messageDiv);
+    
+    // Split into words
+    const words = content.split(' ');
+    
+    // Calculate delay per word based on total length
+    // Shorter messages: slower (60ms/word)
+    // Longer messages: faster (20ms/word)
+    // This makes short messages feel natural and long messages not tedious
+    const wordCount = words.length;
+    let delayPerWord;
+    
+    if (wordCount < 20) {
+        delayPerWord = 60; // Slow for very short messages
+    } else if (wordCount < 50) {
+        delayPerWord = 40; // Medium
+    } else if (wordCount < 100) {
+        delayPerWord = 25; // Faster for longer messages
+    } else {
+        delayPerWord = 20; // Very fast for very long messages
+    }
+    
+    // Animate words appearing one by one
+    for (let i = 0; i < words.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, delayPerWord));
+        
+        if (i === 0) {
+            bubbleDiv.textContent = words[i];
+        } else {
+            bubbleDiv.textContent += ' ' + words[i];
+        }
+        
+        // Scroll to bottom during animation
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    isTyping = false;
+    
+    // Re-enable input after animation completes (unless conversation ended)
+    if (!conversationEnded) {
+        setInputEnabled(true);
+    }
+}
+
+// Check if message is a summary
+function isSummaryMessage(message) {
+    const lowerMessage = message.toLowerCase();
+    
+    const hasConfirmation = (lowerMessage.includes('does this') || lowerMessage.includes('does that')) && 
+                           (lowerMessage.includes('capture') || lowerMessage.includes('accurate'));
+    
+    const sectionHeaders = message.match(/\*\*[A-Z][^*]+\*\*/g) || [];
+    const hasMultipleSections = sectionHeaders.length >= 3;
+    
+    const hasCourseContent = lowerMessage.includes('course');
+    const isSubstantial = message.length > 500;
+    
+    return hasConfirmation && hasMultipleSections && hasCourseContent && isSubstantial;
 }
 
 // Show/hide typing indicator
@@ -439,7 +466,7 @@ function handleModify() {
     setInputEnabled(true);
     startTimer(); // Restart timer if they want to continue
     userInput.focus();
-    addMessage('bot', 'Please share any clarifications or additions you\'d like to make.');
+    addBotMessageWithTyping('Please share any clarifications or additions you\'d like to make.');
 }
 
 // Handle approve button
@@ -459,7 +486,7 @@ async function handleApprove() {
         
         if (response.ok) {
             hideSummaryModal();
-            addMessage('bot', 'Thank you for your time and thoughtful responses! Your feedback has been saved. You may now close this window.');
+            await addBotMessageWithTyping('Thank you for your time and thoughtful responses! Your conversation has been saved. You can return anytime to continue exploring these ideas.');
             conversationEnded = true;
             setInputEnabled(false);
             stopTimer();

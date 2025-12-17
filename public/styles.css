@@ -39,7 +39,7 @@ h1 {
     font-size: 28px;
 }
 
-/* Initial Form Overlay */
+/* Auth Form Styles */
 .form-overlay {
     background-color: white;
     border-radius: 8px;
@@ -56,7 +56,41 @@ h1 {
 
 .form-content p {
     color: #666;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 10px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 16px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.auth-tab.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+}
+
+.auth-tab:hover {
+    color: #3498db;
+}
+
+.auth-form-content {
+    margin-top: 20px;
 }
 
 .form-group {
@@ -82,6 +116,13 @@ h1 {
 .form-group input:focus {
     outline: none;
     border-color: #3498db;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 13px;
 }
 
 .help-link {
@@ -123,20 +164,18 @@ h1 {
     display: flex;
     align-items: center;
     gap: 15px;
-    flex: 1;
 }
 
 .controls-center {
+    flex: 1;
     display: flex;
     justify-content: center;
-    flex: 1;
 }
 
 .controls-right {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    flex: 1;
 }
 
 .btn-icon {
@@ -159,110 +198,6 @@ h1 {
     font-size: 14px;
     color: #666;
     font-weight: 600;
-}
-
-/* Progress Indicator */
-.progress-container {
-    position: relative;
-    display: inline-block;
-}
-
-.progress-button {
-    background-color: white;
-    border: 2px solid #3498db;
-    color: #3498db;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-}
-
-.progress-button:hover {
-    background-color: #e8f4f8;
-}
-
-.progress-button.active {
-    background-color: #3498db;
-    color: white;
-}
-
-.dropdown-arrow {
-    font-size: 10px;
-    transition: transform 0.2s;
-}
-
-.progress-button.active .dropdown-arrow {
-    transform: rotate(180deg);
-}
-
-.topic-dropdown {
-    position: absolute;
-    top: calc(100% + 5px);
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: white;
-    border: 2px solid #3498db;
-    border-radius: 4px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 100;
-    min-width: 280px;
-    max-width: 350px;
-}
-
-.topic-list {
-    padding: 10px 0;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.topic-item {
-    padding: 8px 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    transition: background-color 0.2s;
-    cursor: default;
-}
-
-.topic-item:hover {
-    background-color: #f8f9fa;
-}
-
-.topic-checkbox {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #ddd;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.topic-checkbox.covered {
-    background-color: #27ae60;
-    border-color: #27ae60;
-    color: white;
-}
-
-.topic-checkbox.covered::before {
-    content: '✓';
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.topic-text {
-    color: #555;
-}
-
-.topic-item.covered .topic-text {
-    color: #27ae60;
 }
 
 .btn-end {
@@ -373,7 +308,6 @@ h1 {
 .mic-placeholder {
     width: 40px;
     height: 40px;
-    /* Space for future microphone button */
 }
 
 #user-input {
@@ -454,7 +388,7 @@ h1 {
     line-height: 1.6;
 }
 
-/* Help Modal Specific */
+/* Help Modal */
 .help-content h3 {
     color: #2c3e50;
     margin-top: 20px;
@@ -528,6 +462,16 @@ h1 {
     background-color: #7f8c8d;
 }
 
+/* Error Messages */
+.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 4px;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
 /* Utility Classes */
 .hidden {
     display: none !important;
@@ -561,26 +505,13 @@ h1 {
         gap: 10px;
     }
 
-    .controls-left, 
-    .controls-center, 
-    .controls-right {
-        flex: auto;
-    }
-
-    .controls-center {
-        order: 3;
-        width: 100%;
-        justify-content: flex-start;
-    }
-
     .btn-end {
         font-size: 12px;
         padding: 6px 12px;
     }
 
-    .topic-dropdown {
-        left: 0;
-        transform: none;
-        width: 100%;
+    .form-overlay {
+        margin: 20px;
+        padding: 30px 20px;
     }
 }

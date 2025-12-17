@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NextEd Survey Chatbot</title>
+    <title>C3 - Creative Curriculum Chatbot</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,24 +13,53 @@
     </div>
 
     <div class="container">
-        <h1>NextEd Survey Chatbot</h1>
+        <h1>Creative Curriculum Chatbot (C3)</h1>
 
-        <!-- Initial Form (visible by default) -->
-        <div id="initial-form" class="form-overlay">
+        <!-- Login/Signup Form (visible by default) -->
+        <div id="auth-form" class="form-overlay">
             <div class="form-content">
-                <h2>Welcome!</h2>
-                <p>Please provide your information to begin the conversation.</p>
-                <form id="user-info-form">
+                <h2>Welcome to C3</h2>
+                <p>Exploring creative applications of AI across all disciplines - from arts to engineering to ESL.</p>
+                
+                <!-- Tab switcher -->
+                <div class="auth-tabs">
+                    <button id="signup-tab" class="auth-tab active" onclick="showSignup()">New User</button>
+                    <button id="login-tab" class="auth-tab" onclick="showLogin()">Returning User</button>
+                </div>
+                
+                <!-- Signup Form -->
+                <form id="signup-form" class="auth-form-content">
                     <div class="form-group">
-                        <label for="name">Name:</label>
-                        <input type="text" id="name" name="name" required>
+                        <label for="signup-name">Name:</label>
+                        <input type="text" id="signup-name" name="name" required>
                     </div>
                     <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" required>
+                        <label for="signup-email">Email:</label>
+                        <input type="email" id="signup-email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Password (4+ characters):</label>
+                        <input type="password" id="signup-password" name="password" minlength="4" required>
+                        <small>You'll use this to resume your conversation later</small>
                     </div>
                     <button type="submit" class="btn-primary">Start Conversation</button>
                 </form>
+                
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form-content hidden">
+                    <div class="form-group">
+                        <label for="login-email">Email:</label>
+                        <input type="email" id="login-email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password:</label>
+                        <input type="password" id="login-password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Resume Conversation</button>
+                </form>
+                
+                <div id="auth-error" class="error hidden"></div>
+                
                 <div class="help-link">
                     <a href="#" onclick="showHelp(); return false;">ℹ️ How does this work?</a>
                 </div>
@@ -46,18 +75,7 @@
                     <span id="timer" class="timer">00:00</span>
                 </div>
                 <div class="controls-center">
-                    <!-- Progress Indicator with Dropdown -->
-                    <div class="progress-container">
-                        <button id="progress-btn" class="progress-button">
-                            <span id="progress-text">0/8 topics</span>
-                            <span class="dropdown-arrow">▼</span>
-                        </button>
-                        <div id="topic-dropdown" class="topic-dropdown hidden">
-                            <div class="topic-list">
-                                <!-- Topics will be dynamically inserted here -->
-                            </div>
-                        </div>
-                    </div>
+                    <!-- No progress indicator for C3 -->
                 </div>
                 <div class="controls-right">
                     <button id="end-conversation-btn" class="btn-end">✓ I'm Done</button>
@@ -80,12 +98,11 @@
 
             <!-- Input Area -->
             <div class="input-area">
-                <!-- Space for future microphone button -->
                 <div class="mic-placeholder"></div>
                 
                 <textarea 
                     id="user-input" 
-                    placeholder="Type your message here..."
+                    placeholder="Type your response here..."
                     rows="2"
                 ></textarea>
                 
@@ -96,62 +113,64 @@
         <!-- Help Modal -->
         <div id="help-modal" class="modal hidden">
             <div class="modal-content">
-                <h2>How This Works</h2>
+                <h2>How C3 Works</h2>
                 <div class="help-content">
-                    <h3>About This Tool</h3>
-                    <p>This is a conversational feedback tool that uses AI (Claude by Anthropic) to gather your thoughts about the VizLab AI Workshop in a more natural, exploratory way than traditional surveys.</p>
+                    <h3>About This Conversation</h3>
+                    <p>C3 explores how principles of student agency, creative control, and authentic voice can apply across ALL disciplines - not just arts. We're interested in where students already exercise creativity in your course, and where AI might amplify (or threaten) that.</p>
                     
                     <h3>What to Expect</h3>
                     <ul>
-                        <li><strong>Duration:</strong> About 5-10 minutes</li>
-                        <li><strong>Topics:</strong> We'll cover 8 topics about the workshop - you can see progress at the top</li>
-                        <li><strong>Format:</strong> Natural conversation with follow-up questions</li>
-                        <li><strong>Your answers:</strong> Can be any length - detailed, brief, "I don't know," or "I'd rather not say" are all valid</li>
-                        <li><strong>Timer:</strong> You'll see elapsed time in the top-left. After 10 minutes, the bot will remind you of the time</li>
+                        <li><strong>Duration:</strong> 15-20 minutes typically</li>
+                        <li><strong>Tone:</strong> Collaborative thinking partner, not prescriptive advisor</li>
+                        <li><strong>Questions:</strong> Designed to surface your thinking, not judge your answers</li>
+                        <li><strong>Provocations:</strong> We'll offer examples and tensions to explore</li>
+                        <li><strong>Resumption:</strong> You can pause anytime and pick up later - just login with your email</li>
+                    </ul>
+
+                    <h3>Topics We'll Explore</h3>
+                    <ul>
+                        <li>What you want students to remember forever</li>
+                        <li>Where students currently have creative agency</li>
+                        <li>The difference between learning and task completion</li>
+                        <li>Where AI might amplify student creativity</li>
+                        <li>Where AI might bypass important learning</li>
+                        <li>Your course context and constraints</li>
+                        <li>What you'd need to explore AI safely</li>
                     </ul>
 
                     <h3>You're In Control</h3>
-                    <p>You can guide the conversation by simply telling the bot what you want:</p>
                     <ul>
-                        <li><strong>Move on:</strong> Say "next question" or "let's move on" to skip to another topic</li>
-                        <li><strong>Revisit a topic:</strong> Ask "can we talk more about [topic]?" to return to something earlier</li>
-                        <li><strong>End early:</strong> Say "I'm ready to wrap up" or click the "I'm Done" button</li>
-                        <li><strong>Clarify:</strong> Ask "what do you mean?" if a question isn't clear</li>
+                        <li>Answer however feels right - brief, detailed, "it depends" - all valid</li>
+                        <li>Express uncertainty - "I'm not sure" is honest</li>
+                        <li>Click "I'm Done" whenever you're ready to wrap up</li>
+                        <li>Pause and resume anytime - your conversation is saved</li>
                     </ul>
 
-                    <h3>Your Data</h3>
+                    <h3>What This Isn't</h3>
                     <ul>
-                        <li>The conversation is saved for the NextEd team to review</li>
-                        <li>At the end, you'll see a summary to review and approve</li>
-                        <li>Sessions can't be resumed - if you close this window, you'd need to start over</li>
+                        <li>Not a sales pitch - skepticism is welcome</li>
+                        <li>Not problem-solving - we won't prescribe solutions</li>
+                        <li>Not rushed - take the time you need</li>
+                        <li>Not anonymous - but your conversation is private to the NextEd team</li>
                     </ul>
 
-                    <h3>How to End</h3>
+                    <h3>Technical Notes</h3>
                     <ul>
-                        <li>Click <strong>"I'm Done"</strong> at any time to wrap up the conversation</li>
-                        <li>Or simply say "I'm ready to finish" in the chat</li>
-                        <li>The bot will generate a summary for you to review</li>
-                        <li>You can approve it or go back to add more</li>
-                    </ul>
-
-                    <h3>Tips</h3>
-                    <ul>
-                        <li>Click the topic progress indicator to see which topics will be covered</li>
-                        <li>Be as honest and detailed (or brief) as you want</li>
-                        <li>The bot won't offer solutions - it's here to listen and understand</li>
+                        <li>We'll check in every 10 minutes about time</li>
+                        <li>When bot thinks it has covered main topics, you'll get option to dig deeper or wrap up</li>
                         <li>Press Enter for new lines, click Send to submit</li>
-                        <li>Don't feel stuck on any topic - you can always move on</li>
+                        <li>If stuck, the bot might offer a rating question to keep things moving</li>
                     </ul>
                 </div>
                 <button class="btn-primary" onclick="hideHelp()">Got It</button>
             </div>
         </div>
 
-        <!-- Summary Modal (hidden initially) -->
+        <!-- Summary Modal -->
         <div id="summary-modal" class="modal hidden">
             <div class="modal-content">
                 <h2>Conversation Summary</h2>
-                <p>Please review this summary of our conversation. You can approve it to complete the session, or modify it if you'd like to add or clarify anything.</p>
+                <p>Please review this summary of our conversation. You can approve it to mark the session complete, or modify it if you'd like to add or clarify anything.</p>
                 <div id="summary-text" class="summary-text"></div>
                 <div class="modal-buttons">
                     <button id="modify-btn" class="btn-secondary">Modify</button>

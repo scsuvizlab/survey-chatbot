@@ -11,6 +11,7 @@ const config = require('./config');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const BASE_DATA_DIR = path.join(__dirname, '../data/sessions');
+const REPORTS_DIR = path.join(__dirname, '../data/reports');
 
 const anthropicClient = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -24,13 +25,13 @@ app.use(express.static('public'));
 // Admin authentication middleware
 function requireAdminAuth(req, res, next) {
   const authHeader = req.headers.authorization;
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123'; // Default for dev
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   
-  const password = authHeader.substring(7); // Remove 'Bearer ' prefix
+  const password = authHeader.substring(7);
   
   if (password !== adminPassword) {
     return res.status(401).json({ error: 'Invalid password' });
@@ -39,20 +40,23 @@ function requireAdminAuth(req, res, next) {
   next();
 }
 
-// Apply auth to all admin routes (without wildcard - Express will match all sub-paths)
 app.use('/api/admin', requireAdminAuth);
 
-// Store active sessions (session_id -> {filename, survey_type} mapping)
+// Store active sessions (session_id -> filename mapping)
 const activeSessions = new Map();
 
 // Ensure data directories exist
 async function initializeDataDirs() {
-  const dirs = ['workshop', 'faculty', 'adoption'];
+  const dirs = [
+    BASE_DATA_DIR,
+    path.join(REPORTS_DIR, 'analysis'),
+    path.join(REPORTS_DIR, 'conversations')
+  ];
+  
   for (const dir of dirs) {
-    const dirPath = path.join(BASE_DATA_DIR, dir);
     try {
-      await fs.mkdir(dirPath, { recursive: true });
-      console.log(`âœ“ Data directory ready: ${dir}`);
+      await fs.mkdir(dir, { recursive: true });
+      console.log(`✓ Directory ready: ${dir}`);
     } catch (error) {
       console.error(`Error creating directory ${dir}:`, error);
     }
@@ -62,36 +66,89 @@ async function initializeDataDirs() {
 initializeDataDirs();
 
 // ============================================
-// WORKSHOP FEEDBACK ENDPOINTS (existing survey)
+// C3 ENDPOINTS
 // ============================================
 
-app.post('/api/workshop/start', async (req, res) => {
+// Signup - Create new session
+app.post('/api/signup', async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, password } = req.body;
     
-    if (!name || !email) {
-      return res.status(400).json({ error: 'Name and email required' });
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password required' });
     }
     
-    const surveyType = 'workshop';
-    const { filename, sessionData } = await sessionManager.createSession(name, email, surveyType);
+    if (password.length < 4) {
+      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    }
     
-    activeSessions.set(sessionData.session_id, { filename, survey_type: surveyType });
+    // Check if email already exists
+    const existing = await sessionManager.findSessionByEmail(email);
+    if (existing) {
+      return res.status(400).json({ 
+        error: 'An account with this email already exists. Please login instead.' 
+      });
+    }
     
-    const greeting = config.getWorkshopGreeting(name);
-    await sessionManager.updateSession(filename, 'assistant', greeting, surveyType);
+    const { filename, sessionData } = await sessionManager.createSession(name, email, password);
+    
+    activeSessions.set(sessionData.session_id, { 
+      filename, 
+      start_time: Date.now() 
+    });
+    
+    const greeting = config.getC3Greeting(name);
+    await sessionManager.updateSession(filename, 'assistant', greeting);
     
     res.json({
       session_id: sessionData.session_id,
-      message: greeting
+      message: greeting,
+      is_new: true
     });
   } catch (error) {
-    console.error('Error starting workshop session:', error);
-    res.status(500).json({ error: 'Failed to start session' });
+    console.error('Error creating session:', error);
+    res.status(500).json({ error: 'Failed to create session' });
   }
 });
 
-app.post('/api/workshop/message', async (req, res) => {
+// Login - Resume existing session
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+    
+    const result = await sessionManager.authenticateSession(email, password);
+    
+    if (!result.success) {
+      return res.status(401).json({ error: result.error });
+    }
+    
+    // Calculate start time from session data
+    const startTime = new Date(result.sessionData.participant.start_time).getTime();
+    
+    activeSessions.set(result.sessionData.session_id, { 
+      filename: result.filename,
+      start_time: startTime
+    });
+    
+    // Return conversation history so frontend can display it
+    res.json({
+      session_id: result.sessionData.session_id,
+      conversation: result.sessionData.conversation,
+      status: result.sessionData.status,
+      is_new: false
+    });
+  } catch (error) {
+    console.error('Error logging in:', error);
+    res.status(500).json({ error: 'Failed to login' });
+  }
+});
+
+// Send message
+app.post('/api/message', async (req, res) => {
   try {
     const { session_id, message } = req.body;
     
@@ -100,31 +157,36 @@ app.post('/api/workshop/message', async (req, res) => {
     }
     
     const sessionInfo = activeSessions.get(session_id);
-    if (!sessionInfo || sessionInfo.survey_type !== 'workshop') {
-      return res.status(404).json({ error: 'Session not found' });
+    if (!sessionInfo) {
+      return res.status(404).json({ error: 'Session not found or expired' });
     }
     
-    await sessionManager.updateSession(sessionInfo.filename, 'user', message, 'workshop');
+    await sessionManager.updateSession(sessionInfo.filename, 'user', message);
     
-    const sessionPath = path.join(BASE_DATA_DIR, 'workshop', sessionInfo.filename);
-    const sessionData = JSON.parse(await fs.readFile(sessionPath, 'utf8'));
+    const sessionData = await sessionManager.getSession(sessionInfo.filename);
     
     const conversationHistory = sessionData.conversation.slice(1).map(msg => ({
       role: msg.role,
       content: msg.content
     }));
     
-    const claudeResponse = await claudeService.sendWorkshopMessage(conversationHistory, message);
-    await sessionManager.updateSession(sessionInfo.filename, 'assistant', claudeResponse, 'workshop');
+    const claudeResponse = await claudeService.sendC3Message(
+      conversationHistory, 
+      message,
+      sessionInfo.start_time
+    );
+    
+    await sessionManager.updateSession(sessionInfo.filename, 'assistant', claudeResponse);
     
     res.json({ message: claudeResponse });
   } catch (error) {
-    console.error('Error processing workshop message:', error);
+    console.error('Error processing message:', error);
     res.status(500).json({ error: 'Failed to process message' });
   }
 });
 
-app.post('/api/workshop/summary', async (req, res) => {
+// Generate summary
+app.post('/api/summary', async (req, res) => {
   try {
     const { session_id } = req.body;
     
@@ -133,27 +195,27 @@ app.post('/api/workshop/summary', async (req, res) => {
     }
     
     const sessionInfo = activeSessions.get(session_id);
-    if (!sessionInfo || sessionInfo.survey_type !== 'workshop') {
+    if (!sessionInfo) {
       return res.status(404).json({ error: 'Session not found' });
     }
     
-    const sessionPath = path.join(BASE_DATA_DIR, 'workshop', sessionInfo.filename);
-    const sessionData = JSON.parse(await fs.readFile(sessionPath, 'utf8'));
+    const sessionData = await sessionManager.getSession(sessionInfo.filename);
     
     const conversationHistory = sessionData.conversation.map(msg => ({
       role: msg.role,
       content: msg.content
     }));
     
-    const summary = await claudeService.generateWorkshopSummary(conversationHistory);
+    const summary = await claudeService.generateC3Summary(conversationHistory);
     res.json({ summary });
   } catch (error) {
-    console.error('Error generating workshop summary:', error);
+    console.error('Error generating summary:', error);
     res.status(500).json({ error: 'Failed to generate summary' });
   }
 });
 
-app.post('/api/workshop/complete', async (req, res) => {
+// Complete session
+app.post('/api/complete', async (req, res) => {
   try {
     const { session_id, summary, user_edits } = req.body;
     
@@ -162,7 +224,7 @@ app.post('/api/workshop/complete', async (req, res) => {
     }
     
     const sessionInfo = activeSessions.get(session_id);
-    if (!sessionInfo || sessionInfo.survey_type !== 'workshop') {
+    if (!sessionInfo) {
       return res.status(404).json({ error: 'Session not found' });
     }
     
@@ -172,313 +234,61 @@ app.post('/api/workshop/complete', async (req, res) => {
       user_edits: user_edits || null
     };
     
-    await sessionManager.completeSession(sessionInfo.filename, finalSummary, 'workshop');
-    activeSessions.delete(session_id);
+    await sessionManager.completeSession(sessionInfo.filename, finalSummary);
+    
+    // Keep session in activeSessions so user can still access it
+    // Don't delete like we did before - they can resume anytime
     
     res.json({ success: true });
   } catch (error) {
-    console.error('Error completing workshop session:', error);
+    console.error('Error completing session:', error);
     res.status(500).json({ error: 'Failed to complete session' });
   }
 });
 
 // ============================================
-// FACULTY SURVEY ENDPOINTS (new survey)
+// ADMIN ENDPOINTS
 // ============================================
 
-app.post('/api/faculty/start', async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    
-    if (!name || !email) {
-      return res.status(400).json({ error: 'Name and email required' });
-    }
-    
-    const surveyType = 'faculty';
-    const { filename, sessionData } = await sessionManager.createSession(name, email, surveyType);
-    
-    activeSessions.set(sessionData.session_id, { filename, survey_type: surveyType });
-    
-    const greeting = config.getFacultyGreeting(name);
-    await sessionManager.updateSession(filename, 'assistant', greeting, surveyType);
-    
-    res.json({
-      session_id: sessionData.session_id,
-      message: greeting
-    });
-  } catch (error) {
-    console.error('Error starting faculty session:', error);
-    res.status(500).json({ error: 'Failed to start session' });
-  }
-});
-
-app.post('/api/faculty/message', async (req, res) => {
-  try {
-    const { session_id, message } = req.body;
-    
-    if (!session_id || !message) {
-      return res.status(400).json({ error: 'Session ID and message required' });
-    }
-    
-    const sessionInfo = activeSessions.get(session_id);
-    if (!sessionInfo || sessionInfo.survey_type !== 'faculty') {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-    
-    await sessionManager.updateSession(sessionInfo.filename, 'user', message, 'faculty');
-    
-    const sessionPath = path.join(BASE_DATA_DIR, 'faculty', sessionInfo.filename);
-    const sessionData = JSON.parse(await fs.readFile(sessionPath, 'utf8'));
-    
-    const conversationHistory = sessionData.conversation.slice(1).map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-    
-    const claudeResponse = await claudeService.sendFacultyMessage(conversationHistory, message);
-    await sessionManager.updateSession(sessionInfo.filename, 'assistant', claudeResponse, 'faculty');
-    
-    res.json({ message: claudeResponse });
-  } catch (error) {
-    console.error('Error processing faculty message:', error);
-    res.status(500).json({ error: 'Failed to process message' });
-  }
-});
-
-app.post('/api/faculty/summary', async (req, res) => {
-  try {
-    const { session_id } = req.body;
-    
-    if (!session_id) {
-      return res.status(400).json({ error: 'Session ID required' });
-    }
-    
-    const sessionInfo = activeSessions.get(session_id);
-    if (!sessionInfo || sessionInfo.survey_type !== 'faculty') {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-    
-    const sessionPath = path.join(BASE_DATA_DIR, 'faculty', sessionInfo.filename);
-    const sessionData = JSON.parse(await fs.readFile(sessionPath, 'utf8'));
-    
-    const conversationHistory = sessionData.conversation.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-    
-    const summary = await claudeService.generateFacultySummary(conversationHistory);
-    res.json({ summary });
-  } catch (error) {
-    console.error('Error generating faculty summary:', error);
-    res.status(500).json({ error: 'Failed to generate summary' });
-  }
-});
-
-app.post('/api/faculty/complete', async (req, res) => {
-  try {
-    const { session_id, summary, user_edits } = req.body;
-    
-    if (!session_id) {
-      return res.status(400).json({ error: 'Session ID required' });
-    }
-    
-    const sessionInfo = activeSessions.get(session_id);
-    if (!sessionInfo || sessionInfo.survey_type !== 'faculty') {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-    
-    const finalSummary = {
-      initial: summary,
-      confirmed: summary,
-      user_edits: user_edits || null
-    };
-    
-    await sessionManager.completeSession(sessionInfo.filename, finalSummary, 'faculty');
-    activeSessions.delete(session_id);
-    
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error completing faculty session:', error);
-    res.status(500).json({ error: 'Failed to complete session' });
-  }
-});
-
-// ============================================
-// ADOPTION SURVEY ENDPOINTS (Course Redesign Exploration)
-// ============================================
-
-app.post('/api/adoption/start', async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    
-    if (!name || !email) {
-      return res.status(400).json({ error: 'Name and email required' });
-    }
-    
-    const surveyType = 'adoption';
-    const { filename, sessionData } = await sessionManager.createSession(name, email, surveyType);
-    
-    activeSessions.set(sessionData.session_id, { filename, survey_type: surveyType });
-    
-    const greeting = config.getAdoptionGreeting(name);
-    await sessionManager.updateSession(filename, 'assistant', greeting, surveyType);
-    
-    res.json({
-      session_id: sessionData.session_id,
-      message: greeting
-    });
-  } catch (error) {
-    console.error('Error starting adoption session:', error);
-    res.status(500).json({ error: 'Failed to start session' });
-  }
-});
-
-app.post('/api/adoption/message', async (req, res) => {
-  try {
-    const { session_id, message } = req.body;
-    
-    if (!session_id || !message) {
-      return res.status(400).json({ error: 'Session ID and message required' });
-    }
-    
-    const sessionInfo = activeSessions.get(session_id);
-    if (!sessionInfo || sessionInfo.survey_type !== 'adoption') {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-    
-    await sessionManager.updateSession(sessionInfo.filename, 'user', message, 'adoption');
-    
-    const sessionPath = path.join(BASE_DATA_DIR, 'adoption', sessionInfo.filename);
-    const sessionData = JSON.parse(await fs.readFile(sessionPath, 'utf8'));
-    
-    const conversationHistory = sessionData.conversation.slice(1).map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-    
-    const claudeResponse = await claudeService.sendAdoptionMessage(conversationHistory, message);
-    await sessionManager.updateSession(sessionInfo.filename, 'assistant', claudeResponse, 'adoption');
-    
-    res.json({ message: claudeResponse });
-  } catch (error) {
-    console.error('Error processing adoption message:', error);
-    res.status(500).json({ error: 'Failed to process message' });
-  }
-});
-
-app.post('/api/adoption/summary', async (req, res) => {
-  try {
-    const { session_id } = req.body;
-    
-    if (!session_id) {
-      return res.status(400).json({ error: 'Session ID required' });
-    }
-    
-    const sessionInfo = activeSessions.get(session_id);
-    if (!sessionInfo || sessionInfo.survey_type !== 'adoption') {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-    
-    const sessionPath = path.join(BASE_DATA_DIR, 'adoption', sessionInfo.filename);
-    const sessionData = JSON.parse(await fs.readFile(sessionPath, 'utf8'));
-    
-    const conversationHistory = sessionData.conversation.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-    
-    const summary = await claudeService.generateAdoptionSummary(conversationHistory);
-    res.json({ summary });
-  } catch (error) {
-    console.error('Error generating adoption summary:', error);
-    res.status(500).json({ error: 'Failed to generate summary' });
-  }
-});
-
-app.post('/api/adoption/complete', async (req, res) => {
-  try {
-    const { session_id, summary, user_edits } = req.body;
-    
-    if (!session_id) {
-      return res.status(400).json({ error: 'Session ID required' });
-    }
-    
-    const sessionInfo = activeSessions.get(session_id);
-    if (!sessionInfo || sessionInfo.survey_type !== 'adoption') {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-    
-    const finalSummary = {
-      initial: summary,
-      confirmed: summary,
-      user_edits: user_edits || null
-    };
-    
-    await sessionManager.completeSession(sessionInfo.filename, finalSummary, 'adoption');
-    activeSessions.delete(session_id);
-    
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error completing adoption session:', error);
-    res.status(500).json({ error: 'Failed to complete session' });
-  }
-});
-
-// ============================================
-// ADMIN ENDPOINTS - Multi-Survey Support
-// ============================================
-
+// List all sessions
 app.get('/api/admin/sessions', async (req, res) => {
   try {
-    const surveyType = req.query.survey_type || 'all';
+    const files = await fs.readdir(BASE_DATA_DIR);
+    const jsonFiles = files.filter(f => f.endsWith('.json'));
     
-    const surveyTypes = surveyType === 'all' ? ['workshop', 'faculty', 'adoption'] : [surveyType];
-    const allSessions = [];
+    const sessions = [];
     
-    for (const type of surveyTypes) {
-      const dirPath = path.join(BASE_DATA_DIR, type);
-      try {
-        const files = await fs.readdir(dirPath);
-        const jsonFiles = files.filter(f => f.endsWith('.json'));
-        
-        for (const file of jsonFiles) {
-          const content = await fs.readFile(path.join(dirPath, file), 'utf8');
-          const data = JSON.parse(content);
-          allSessions.push({
-            survey_type: type,
-            filename: file,
-            participant: data.participant,
-            status: data.status,
-            start_time: data.participant.start_time,
-            completed_time: data.completed_time || null
-          });
-        }
-      } catch (error) {
-        console.error(`Error reading ${type} directory:`, error);
-      }
+    for (const file of jsonFiles) {
+      const content = await fs.readFile(path.join(BASE_DATA_DIR, file), 'utf8');
+      const data = JSON.parse(content);
+      sessions.push({
+        filename: file,
+        participant: data.participant,
+        status: data.status,
+        start_time: data.participant.start_time,
+        completed_time: data.completed_time || null,
+        last_accessed: data.last_accessed || data.last_updated
+      });
     }
     
-    allSessions.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
-    res.json({ sessions: allSessions });
+    sessions.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+    res.json({ sessions });
   } catch (error) {
     console.error('Error listing sessions:', error);
     res.status(500).json({ error: 'Failed to list sessions' });
   }
 });
 
-app.get('/api/admin/sessions/:survey_type/:filename', async (req, res) => {
+// Download session
+app.get('/api/admin/sessions/:filename', async (req, res) => {
   try {
-    const { survey_type, filename } = req.params;
+    const { filename } = req.params;
     
     if (filename.includes('..') || filename.includes('/')) {
       return res.status(400).json({ error: 'Invalid filename' });
     }
     
-    if (!['workshop', 'faculty', 'adoption'].includes(survey_type)) {
-      return res.status(400).json({ error: 'Invalid survey type' });
-    }
-    
-    const filepath = path.join(BASE_DATA_DIR, survey_type, filename);
+    const filepath = path.join(BASE_DATA_DIR, filename);
     const content = await fs.readFile(filepath, 'utf8');
     
     res.setHeader('Content-Type', 'application/json');
@@ -490,19 +300,16 @@ app.get('/api/admin/sessions/:survey_type/:filename', async (req, res) => {
   }
 });
 
-app.delete('/api/admin/sessions/:survey_type/:filename', async (req, res) => {
+// Delete session
+app.delete('/api/admin/sessions/:filename', async (req, res) => {
   try {
-    const { survey_type, filename } = req.params;
+    const { filename } = req.params;
     
     if (filename.includes('..') || filename.includes('/')) {
       return res.status(400).json({ error: 'Invalid filename' });
     }
     
-    if (!['workshop', 'faculty', 'adoption'].includes(survey_type)) {
-      return res.status(400).json({ error: 'Invalid survey type' });
-    }
-    
-    const filepath = path.join(BASE_DATA_DIR, survey_type, filename);
+    const filepath = path.join(BASE_DATA_DIR, filename);
     
     try {
       await fs.access(filepath);
@@ -511,7 +318,7 @@ app.delete('/api/admin/sessions/:survey_type/:filename', async (req, res) => {
     }
     
     await fs.unlink(filepath);
-    console.log(`Deleted ${survey_type} session: ${filename}`);
+    console.log(`Deleted session: ${filename}`);
     res.json({ success: true, message: 'Session deleted successfully' });
   } catch (error) {
     console.error('Error deleting session:', error);
@@ -519,36 +326,22 @@ app.delete('/api/admin/sessions/:survey_type/:filename', async (req, res) => {
   }
 });
 
-app.get('/api/admin/sessions-all/:survey_type', async (req, res) => {
+// Download all sessions
+app.get('/api/admin/sessions-all', async (req, res) => {
   try {
-    const { survey_type } = req.params;
+    const files = await fs.readdir(BASE_DATA_DIR);
+    const jsonFiles = files.filter(f => f.endsWith('.json'));
     
-    if (!['workshop', 'faculty', 'adoption', 'all'].includes(survey_type)) {
-      return res.status(400).json({ error: 'Invalid survey type' });
-    }
-    
-    const surveyTypes = survey_type === 'all' ? ['workshop', 'faculty', 'adoption'] : [survey_type];
     const allSessions = [];
     
-    for (const type of surveyTypes) {
-      const dirPath = path.join(BASE_DATA_DIR, type);
-      try {
-        const files = await fs.readdir(dirPath);
-        const jsonFiles = files.filter(f => f.endsWith('.json'));
-        
-        for (const file of jsonFiles) {
-          const content = await fs.readFile(path.join(dirPath, file), 'utf8');
-          const data = JSON.parse(content);
-          data.survey_type = type; // Add survey type to data
-          allSessions.push(data);
-        }
-      } catch (error) {
-        console.error(`Error reading ${type} directory:`, error);
-      }
+    for (const file of jsonFiles) {
+      const content = await fs.readFile(path.join(BASE_DATA_DIR, file), 'utf8');
+      const data = JSON.parse(content);
+      allSessions.push(data);
     }
     
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="all-sessions-${survey_type}.json"`);
+    res.setHeader('Content-Disposition', 'attachment; filename="all-c3-sessions.json"');
     res.json(allSessions);
   } catch (error) {
     console.error('Error downloading all sessions:', error);
@@ -556,33 +349,20 @@ app.get('/api/admin/sessions-all/:survey_type', async (req, res) => {
   }
 });
 
-app.delete('/api/admin/sessions-all/:survey_type', async (req, res) => {
+// Delete all sessions
+app.delete('/api/admin/sessions-all', async (req, res) => {
   try {
-    const { survey_type } = req.params;
+    const files = await fs.readdir(BASE_DATA_DIR);
+    const jsonFiles = files.filter(f => f.endsWith('.json'));
     
-    if (!['workshop', 'faculty', 'adoption', 'all'].includes(survey_type)) {
-      return res.status(400).json({ error: 'Invalid survey type' });
-    }
-    
-    const surveyTypes = survey_type === 'all' ? ['workshop', 'faculty', 'adoption'] : [survey_type];
     let totalDeleted = 0;
     
-    for (const type of surveyTypes) {
-      const dirPath = path.join(BASE_DATA_DIR, type);
+    for (const file of jsonFiles) {
       try {
-        const files = await fs.readdir(dirPath);
-        const jsonFiles = files.filter(f => f.endsWith('.json'));
-        
-        for (const file of jsonFiles) {
-          try {
-            await fs.unlink(path.join(dirPath, file));
-            totalDeleted++;
-          } catch (error) {
-            console.error(`Failed to delete ${file}:`, error);
-          }
-        }
+        await fs.unlink(path.join(BASE_DATA_DIR, file));
+        totalDeleted++;
       } catch (error) {
-        console.error(`Error reading ${type} directory:`, error);
+        console.error(`Failed to delete ${file}:`, error);
       }
     }
     
@@ -598,18 +378,12 @@ app.delete('/api/admin/sessions-all/:survey_type', async (req, res) => {
   }
 });
 
-app.post('/api/admin/analyze/:survey_type', async (req, res) => {
+// Run aggregate analysis
+app.post('/api/admin/analyze', async (req, res) => {
   try {
-    const { survey_type } = req.params;
+    console.log('Starting C3 analysis...');
     
-    if (!['workshop', 'faculty', 'adoption'].includes(survey_type)) {
-      return res.status(400).json({ error: 'Invalid survey type' });
-    }
-    
-    console.log(`Starting analysis for ${survey_type}...`);
-    
-    const dirPath = path.join(BASE_DATA_DIR, survey_type);
-    const files = await fs.readdir(dirPath);
+    const files = await fs.readdir(BASE_DATA_DIR);
     const jsonFiles = files.filter(f => f.endsWith('.json'));
     
     if (jsonFiles.length === 0) {
@@ -618,17 +392,14 @@ app.post('/api/admin/analyze/:survey_type', async (req, res) => {
     
     const sessions = [];
     for (const file of jsonFiles) {
-      const content = await fs.readFile(path.join(dirPath, file), 'utf8');
+      const content = await fs.readFile(path.join(BASE_DATA_DIR, file), 'utf8');
       const data = JSON.parse(content);
       
       if (data.status === 'completed' && data.summary) {
         sessions.push({
           participant: data.participant.name,
-          summary: data.summary.confirmed || data.summary.initial,
-          conversationSnippets: data.conversation
-            .filter(msg => msg.role === 'user')
-            .slice(0, 5)
-            .map(msg => msg.content)
+          department: extractDepartment(data.summary.confirmed || data.summary.initial),
+          summary: data.summary.confirmed || data.summary.initial
         });
       }
     }
@@ -637,17 +408,9 @@ app.post('/api/admin/analyze/:survey_type', async (req, res) => {
       return res.status(400).json({ error: 'No completed sessions to analyze' });
     }
     
-    console.log(`Analyzing ${sessions.length} completed ${survey_type} sessions...`);
+    console.log(`Analyzing ${sessions.length} completed C3 sessions...`);
     
-    // Use survey-specific analysis prompt
-    let analysisPrompt;
-    if (survey_type === 'workshop') {
-      analysisPrompt = claudeService.getWorkshopAnalysisPrompt(sessions);
-    } else if (survey_type === 'faculty') {
-      analysisPrompt = claudeService.getFacultyAnalysisPrompt(sessions);
-    } else if (survey_type === 'adoption') {
-      analysisPrompt = claudeService.getAdoptionAnalysisPrompt(sessions);
-    }
+    const analysisPrompt = claudeService.getC3AnalysisPrompt(sessions);
     
     const response = await anthropicClient.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -660,7 +423,15 @@ app.post('/api/admin/analyze/:survey_type', async (req, res) => {
     
     const analysis = response.content[0].text;
     console.log('Analysis complete');
-    res.json({ analysis });
+    
+    // Auto-save the report
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('Z', '');
+    const filename = `c3-analysis-${timestamp}.txt`;
+    const reportPath = path.join(REPORTS_DIR, 'analysis', filename);
+    await fs.writeFile(reportPath, analysis, 'utf8');
+    console.log(`Saved analysis report: ${filename}`);
+    
+    res.json({ analysis, filename });
     
   } catch (error) {
     console.error('Error running analysis:', error);
@@ -668,115 +439,88 @@ app.post('/api/admin/analyze/:survey_type', async (req, res) => {
   }
 });
 
-// Generate individual course report for adoption surveys
-app.post('/api/admin/course-report/:survey_type/:filename', async (req, res) => {
+// Generate individual conversation analysis
+app.post('/api/admin/conversation-analysis/:filename', async (req, res) => {
   try {
-    const { survey_type, filename } = req.params;
-    
-    // Only allow for adoption surveys
-    if (survey_type !== 'adoption') {
-      return res.status(400).json({ error: 'Course reports are only available for adoption surveys' });
-    }
+    const { filename } = req.params;
     
     if (filename.includes('..') || filename.includes('/')) {
       return res.status(400).json({ error: 'Invalid filename' });
     }
     
-    console.log(`Generating course report for ${filename}...`);
+    console.log(`Generating conversation analysis for ${filename}...`);
     
-    const filepath = path.join(BASE_DATA_DIR, survey_type, filename);
+    const filepath = path.join(BASE_DATA_DIR, filename);
     const content = await fs.readFile(filepath, 'utf8');
     const sessionData = JSON.parse(content);
     
     if (sessionData.status !== 'completed' || !sessionData.summary) {
-      return res.status(400).json({ error: 'Can only generate reports for completed sessions' });
+      return res.status(400).json({ error: 'Can only analyze completed sessions' });
     }
     
-    // Check if report already exists
-    if (sessionData.course_report) {
-      console.log('Using cached course report');
-      return res.json({ report: sessionData.course_report });
+    // Check if analysis already exists in session
+    if (sessionData.conversation_analysis) {
+      console.log('Using cached conversation analysis');
+      return res.json({ analysis: sessionData.conversation_analysis });
     }
     
-    // Generate new report
-    const report = await claudeService.generateAdoptionCourseReport(sessionData);
+    // Calculate duration
+    const startTime = new Date(sessionData.participant.start_time);
+    const endTime = new Date(sessionData.completed_time);
+    const durationMinutes = Math.round((endTime - startTime) / 60000);
     
-    // Save report back to session file
-    sessionData.course_report = report;
-    sessionData.course_report_generated = new Date().toISOString();
+    const analysisPrompt = claudeService.getC3ConversationAnalysisPrompt({
+      participant: sessionData.participant,
+      department: extractDepartment(sessionData.summary.confirmed || sessionData.summary.initial),
+      duration: `${durationMinutes} minutes`,
+      conversation: sessionData.conversation,
+      summary: sessionData.summary
+    });
+    
+    const response = await anthropicClient.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 3000,
+      messages: [{
+        role: 'user',
+        content: analysisPrompt
+      }]
+    });
+    
+    const analysis = response.content[0].text;
+    
+    // Save analysis back to session file
+    sessionData.conversation_analysis = analysis;
+    sessionData.conversation_analysis_generated = new Date().toISOString();
     await fs.writeFile(filepath, JSON.stringify(sessionData, null, 2), 'utf8');
     
-    console.log('Course report generated and saved');
-    res.json({ report });
-    
-  } catch (error) {
-    console.error('Error generating course report:', error);
-    res.status(500).json({ error: 'Report generation failed: ' + error.message });
-  }
-});
-
-// Save analysis report to file
-app.post('/api/admin/save-analysis', async (req, res) => {
-  try {
-    const { survey_type, analysis } = req.body;
-    
-    if (!survey_type || !analysis) {
-      return res.status(400).json({ error: 'Survey type and analysis required' });
-    }
-    
+    // Also save as separate report file
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('Z', '');
-    const filename = `${survey_type}-analysis-${timestamp}.txt`;
-    const reportPath = path.join(__dirname, '../data/reports/analysis', filename);
-    
+    const sanitizedName = sessionData.participant.name.replace(/[^a-zA-Z0-9]/g, '_');
+    const reportFilename = `conversation-${sanitizedName}-${timestamp}.txt`;
+    const reportPath = path.join(REPORTS_DIR, 'conversations', reportFilename);
     await fs.writeFile(reportPath, analysis, 'utf8');
     
-    console.log(`Saved analysis report: ${filename}`);
-    res.json({ success: true, filename });
+    console.log('Conversation analysis generated and saved');
+    res.json({ analysis, filename: reportFilename });
     
   } catch (error) {
-    console.error('Error saving analysis report:', error);
-    res.status(500).json({ error: 'Failed to save report: ' + error.message });
+    console.error('Error generating conversation analysis:', error);
+    res.status(500).json({ error: 'Analysis failed: ' + error.message });
   }
 });
 
-// Save course report to file
-app.post('/api/admin/save-course-report', async (req, res) => {
-  try {
-    const { survey_type, filename, participant_name, report } = req.body;
-    
-    if (!survey_type || !filename || !report) {
-      return res.status(400).json({ error: 'Survey type, filename, and report required' });
-    }
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('Z', '');
-    const sanitizedName = participant_name.replace(/[^a-zA-Z0-9]/g, '_');
-    const reportFilename = `course-${sanitizedName}-${timestamp}.txt`;
-    const reportPath = path.join(__dirname, '../data/reports/courses', reportFilename);
-    
-    await fs.writeFile(reportPath, report, 'utf8');
-    
-    console.log(`Saved course report: ${reportFilename}`);
-    res.json({ success: true, filename: reportFilename });
-    
-  } catch (error) {
-    console.error('Error saving course report:', error);
-    res.status(500).json({ error: 'Failed to save report: ' + error.message });
-  }
-});
-
-// List all saved reports
+// List saved reports
 app.get('/api/admin/reports', async (req, res) => {
   try {
-    const reports = { analysis: [], courses: [] };
+    const reports = { analysis: [], conversations: [] };
     
     // List analysis reports
     try {
-      const analysisDir = path.join(__dirname, '../data/reports/analysis');
-      const analysisFiles = await fs.readdir(analysisDir);
+      const analysisFiles = await fs.readdir(path.join(REPORTS_DIR, 'analysis'));
       
       for (const file of analysisFiles) {
         if (file.endsWith('.txt')) {
-          const stats = await fs.stat(path.join(analysisDir, file));
+          const stats = await fs.stat(path.join(REPORTS_DIR, 'analysis', file));
           reports.analysis.push({
             filename: file,
             created: stats.mtime,
@@ -788,15 +532,14 @@ app.get('/api/admin/reports', async (req, res) => {
       console.log('No analysis reports yet');
     }
     
-    // List course reports
+    // List conversation reports
     try {
-      const coursesDir = path.join(__dirname, '../data/reports/courses');
-      const courseFiles = await fs.readdir(coursesDir);
+      const conversationFiles = await fs.readdir(path.join(REPORTS_DIR, 'conversations'));
       
-      for (const file of courseFiles) {
+      for (const file of conversationFiles) {
         if (file.endsWith('.txt')) {
-          const stats = await fs.stat(path.join(coursesDir, file));
-          reports.courses.push({
+          const stats = await fs.stat(path.join(REPORTS_DIR, 'conversations', file));
+          reports.conversations.push({
             filename: file,
             created: stats.mtime,
             size: stats.size
@@ -804,12 +547,12 @@ app.get('/api/admin/reports', async (req, res) => {
         }
       }
     } catch (error) {
-      console.log('No course reports yet');
+      console.log('No conversation reports yet');
     }
     
     // Sort by date, newest first
     reports.analysis.sort((a, b) => b.created - a.created);
-    reports.courses.sort((a, b) => b.created - a.created);
+    reports.conversations.sort((a, b) => b.created - a.created);
     
     res.json(reports);
     
@@ -819,12 +562,12 @@ app.get('/api/admin/reports', async (req, res) => {
   }
 });
 
-// Download a saved report
+// Download a report
 app.get('/api/admin/reports/:type/:filename', async (req, res) => {
   try {
     const { type, filename } = req.params;
     
-    if (!['analysis', 'courses'].includes(type)) {
+    if (!['analysis', 'conversations'].includes(type)) {
       return res.status(400).json({ error: 'Invalid report type' });
     }
     
@@ -832,7 +575,7 @@ app.get('/api/admin/reports/:type/:filename', async (req, res) => {
       return res.status(400).json({ error: 'Invalid filename' });
     }
     
-    const reportPath = path.join(__dirname, `../data/reports/${type}`, filename);
+    const reportPath = path.join(REPORTS_DIR, type, filename);
     const content = await fs.readFile(reportPath, 'utf8');
     
     res.setHeader('Content-Type', 'text/plain');
@@ -845,12 +588,12 @@ app.get('/api/admin/reports/:type/:filename', async (req, res) => {
   }
 });
 
-// Delete a saved report
+// Delete a report
 app.delete('/api/admin/reports/:type/:filename', async (req, res) => {
   try {
     const { type, filename } = req.params;
     
-    if (!['analysis', 'courses'].includes(type)) {
+    if (!['analysis', 'conversations'].includes(type)) {
       return res.status(400).json({ error: 'Invalid report type' });
     }
     
@@ -858,7 +601,7 @@ app.delete('/api/admin/reports/:type/:filename', async (req, res) => {
       return res.status(400).json({ error: 'Invalid filename' });
     }
     
-    const reportPath = path.join(__dirname, `../data/reports/${type}`, filename);
+    const reportPath = path.join(REPORTS_DIR, type, filename);
     await fs.unlink(reportPath);
     
     console.log(`Deleted report: ${filename}`);
@@ -870,29 +613,34 @@ app.delete('/api/admin/reports/:type/:filename', async (req, res) => {
   }
 });
 
+// Helper function to extract department from summary
+function extractDepartment(summary) {
+  const match = summary.match(/\*\*Course Context:\*\*([^*]+)/);
+  if (match) {
+    const context = match[1];
+    const deptMatch = context.match(/Department[:\s]+([^,\n]+)/i);
+    if (deptMatch) {
+      return deptMatch[1].trim();
+    }
+  }
+  return 'Not specified';
+}
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log('\nWorkshop Feedback endpoints:');
-  console.log('  POST /api/workshop/start');
-  console.log('  POST /api/workshop/message');
-  console.log('  POST /api/workshop/summary');
-  console.log('  POST /api/workshop/complete');
-  console.log('\nFaculty Survey endpoints:');
-  console.log('  POST /api/faculty/start');
-  console.log('  POST /api/faculty/message');
-  console.log('  POST /api/faculty/summary');
-  console.log('  POST /api/faculty/complete');
-  console.log('\nAdoption Survey endpoints:');
-  console.log('  POST /api/adoption/start');
-  console.log('  POST /api/adoption/message');
-  console.log('  POST /api/adoption/summary');
-  console.log('  POST /api/adoption/complete');
+  console.log(`\n🚀 C3 (Creative Curriculum Chatbot) running on http://localhost:${PORT}`);
+  console.log('\nUser endpoints:');
+  console.log('  POST /api/signup - Create new session');
+  console.log('  POST /api/login - Resume existing session');
+  console.log('  POST /api/message - Send message');
+  console.log('  POST /api/summary - Generate summary');
+  console.log('  POST /api/complete - Complete session');
   console.log('\nAdmin endpoints:');
-  console.log('  GET /api/admin/sessions?survey_type=workshop|faculty|adoption|all');
-  console.log('  GET /api/admin/sessions/:survey_type/:filename');
-  console.log('  DELETE /api/admin/sessions/:survey_type/:filename');
-  console.log('  GET /api/admin/sessions-all/:survey_type');
-  console.log('  DELETE /api/admin/sessions-all/:survey_type');
-  console.log('  POST /api/admin/analyze/:survey_type');
+  console.log('  GET /api/admin/sessions - List all sessions');
+  console.log('  GET /api/admin/sessions/:filename - Download session');
+  console.log('  DELETE /api/admin/sessions/:filename - Delete session');
+  console.log('  POST /api/admin/analyze - Run aggregate analysis');
+  console.log('  POST /api/admin/conversation-analysis/:filename - Analyze individual conversation');
+  console.log('  GET /api/admin/reports - List saved reports');
+  console.log('\n✓ System ready\n');
 });
